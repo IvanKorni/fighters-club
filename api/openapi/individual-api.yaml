@@ -210,9 +210,7 @@ components:
       type: object
       required:
         - email
-        - firstName
-        - lastName
-        - passport_number
+        - nickname
       properties:
         nickname:
           type: string

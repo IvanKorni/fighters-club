@@ -146,58 +146,19 @@ components:
           type: string
           format: email
 
-    AddressWriteDto:
-      type: object
-      required: [ ]
-      properties:
-        address:
-          type: string
-        zip_code:
-          type: string
-        city:
-          type: string
-        country_code:
-          type: string
-
     IndividualDto:
       type: object
       required: [
         email,
-        firstName,
-        lastName,
-        passport_number,
-        phone_number,
-        address,
+        nickname,
       ]
       properties:
-        firstName:
-          type: string
-          format: email
-        lastName:
+        nickname:
           type: string
           format: email
         email:
           type: string
           format: email
-        passport_number:
-          type: string
-        phone_number:
-          type: string
-        address:
-          $ref: '#/components/schemas/AddressDto'
-
-    AddressDto:
-      type: object
-      required: [ ]
-      properties:
-        address:
-          type: string
-        zip_code:
-          type: string
-        city:
-          type: string
-        country_code:
-          type: string
 
     IndividualPageDto:
       type: object
