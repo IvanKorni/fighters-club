@@ -139,29 +139,12 @@ components:
     IndividualWriteDto:
       type: object
       required: [
-        email,
-        firstName,
-        lastName,
-        passport_number,
-        phone_number,
-        address,
+        email
       ]
       properties:
-        firstName:
-          type: string
-          format: email
-        lastName:
-          type: string
-          format: email
         email:
           type: string
           format: email
-        passport_number:
-          type: string
-        phone_number:
-          type: string
-        address:
-          $ref: '#/components/schemas/AddressWriteDto'
 
     AddressWriteDto:
       type: object

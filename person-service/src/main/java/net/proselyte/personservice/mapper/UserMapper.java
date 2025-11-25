@@ -22,10 +22,7 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 
 @Mapper(
         componentModel = SPRING,
-        injectionStrategy = CONSTRUCTOR,
-        uses = {
-                AddressMapper.class
-        }
+        injectionStrategy = CONSTRUCTOR
 )
 @Setter(onMethod_ = @Autowired)
 public abstract class UserMapper {
@@ -36,14 +33,10 @@ public abstract class UserMapper {
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "created", expression = "java(dateTimeUtil.now())")
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
-    @Mapping(target = "address", source = ".", qualifiedByName = "toAddress")
     public abstract User to(IndividualWriteDto dto);
 
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
-    @Mapping(target = "firstName", source = "firstName")
-    @Mapping(target = "lastName", source = "lastName")
-    @Mapping(target = "address", expression = "java(addressMapper.update(user, dto))")
     public abstract User update(
             @MappingTarget
             User user,

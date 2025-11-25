@@ -185,15 +185,10 @@ components:
         - email
         - password
         - confirm_password
-        - firstName
-        - lastName
-        - passport_number
-        - phone_number
-        - address
+        - nickname
+
       properties:
-        firstName:
-          type: string
-        lastName:
+        nickname:
           type: string
         email:
           type: string
@@ -202,12 +197,6 @@ components:
           type: string
         confirm_password:
           type: string
-        passport_number:
-          type: string
-        phone_number:
-          type: string
-        address:
-          $ref: '#/components/schemas/AddressWriteDto'
 
     IndividualWriteResponseDto:
       type: object
@@ -224,22 +213,12 @@ components:
         - firstName
         - lastName
         - passport_number
-        - phone_number
-        - address
       properties:
-        firstName:
-          type: string
-        lastName:
+        nickname:
           type: string
         email:
           type: string
           format: email
-        passport_number:
-          type: string
-        phone_number:
-          type: string
-        address:
-          $ref: '#/components/schemas/AddressDto'
 
     IndividualPageDto:
       type: object
@@ -249,26 +228,3 @@ components:
           items:
             $ref: '#/components/schemas/IndividualDto'
 
-    AddressWriteDto:
-      type: object
-      properties:
-        address:
-          type: string
-        zip_code:
-          type: string
-        city:
-          type: string
-        country_code:
-          type: string
-
-    AddressDto:
-      type: object
-      properties:
-        address:
-          type: string
-        zip_code:
-          type: string
-        city:
-          type: string
-        country_code:
-          type: string

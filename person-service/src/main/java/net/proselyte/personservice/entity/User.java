@@ -20,13 +20,6 @@ public class User extends BaseEntity {
 
     @Size(max = 64)
     @Column(name = "first_name", nullable = false, unique = true, length = 64)
-    private String firstName;
+    private String nickname;
 
-    @Size(max = 64)
-    @Column(name = "last_name", nullable = false, unique = true, length = 64)
-    private String lastName;
-
-    @OneToOne(optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
-    @JoinColumn(name = "address_id", nullable = false)
-    private Address address;
 }
