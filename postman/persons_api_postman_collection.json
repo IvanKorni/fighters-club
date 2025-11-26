@@ -38,7 +38,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Ivan\",\n  \"lastName\": \"Petrov\",\n  \"email\": \"ivan.petrov@example.com\",\n  \"passport_number\": \"4010 123456\",\n  \"phone_number\": \"+47 912 34 567\",\n  \"address\": {\n    \"address\": \"Karl Johans gate 15\",\n    \"zip_code\": \"0154\",\n    \"city\": \"Oslo\",\n    \"country_code\": \"NOR\"\n  }\n}"
+          "raw": "{\n  \"nickname\": \"IvanPetrov\",\n  \"email\": \"ivan.petrov@example.com\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/v1/persons",
@@ -75,7 +75,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Sidorova\",\n  \"email\": \"anna.sidorova@example.com\",\n  \"passport_number\": \"4011 654321\",\n  \"phone_number\": \"+47 913 22 111\",\n  \"address\": {\n    \"address\": \"Dronning Eufemias gate 35\",\n    \"zip_code\": \"0191\",\n    \"city\": \"Oslo\",\n    \"country_code\": \"NOR\"\n  }\n}"
+          "raw": "{\n  \"nickname\": \"AnnaSidorova\",\n  \"email\": \"anna.sidorova@example.com\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/v1/persons",
@@ -207,7 +207,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Ivan-Updated\",\n  \"lastName\": \"Petrov\",\n  \"email\": \"ivan.petrov@example.com\",\n  \"passport_number\": \"4010 123456\",\n  \"phone_number\": \"+47 999 88 777\",\n  \"address\": {\n    \"address\": \"Storgata 7\",\n    \"zip_code\": \"0181\",\n    \"city\": \"Oslo\",\n    \"country_code\": \"NOR\"\n  }\n}"
+          "raw": "{\n  \"nickname\": \"IvanUpdated\",\n  \"email\": \"ivan.petrov@example.com\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/v1/persons/{{personId}}",

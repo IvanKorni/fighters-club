@@ -19,7 +19,7 @@ public class User extends BaseEntity {
     private String email;
 
     @Size(max = 64)
-    @Column(name = "first_name", nullable = false, unique = true, length = 64)
+    @Column(name = "nickname", nullable = false, unique = true, length = 64)
     private String nickname;
 
 }

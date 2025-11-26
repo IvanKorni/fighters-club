@@ -81,16 +81,20 @@ public class UserService {
                                                 );
                                                 return keycloakClient
                                                         .resetUserPassword(kcUserId, cred, adminToken.getAccessToken())
-                                                        .thenReturn(kcUserId);
+                                                        .thenReturn(kcUserId)
+                                                        .flatMap(r ->
+                                                                keycloakClient.login(
+                                                                        new net.proselyte.keycloak.dto.UserLoginRequest(
+                                                                                request.getEmail(),
+                                                                                request.getPassword()
+                                                                        )
+                                                                )
+                                                        )
+                                                        .onErrorResume(ex ->
+                                                                keycloakClient.executeOnError(kcUserId, adminToken.getAccessToken(), ex)
+                                                                        .then(Mono.error(ex))
+                                                        );
                                             })
-                                            .flatMap(r ->
-                                                    keycloakClient.login(
-                                                            new net.proselyte.keycloak.dto.UserLoginRequest(
-                                                                    request.getEmail(),
-                                                                    request.getPassword()
-                                                            )
-                                                    )
-                                            )
                                             .onErrorResume(err ->
                                                     personService.compensateRegistration(personId.getId().toString())
                                                             .then(Mono.error(err))

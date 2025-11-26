@@ -33,6 +33,7 @@ public abstract class UserMapper {
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "created", expression = "java(dateTimeUtil.now())")
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
+    @Mapping(target = "nickname", source = "email")
     public abstract User to(IndividualWriteDto dto);
 
     @BeanMapping(ignoreByDefault = true)

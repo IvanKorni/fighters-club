@@ -55,6 +55,35 @@
       }
     },
     {
+      "name": "1) Create Person (POST /v1/persons)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/persons"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has id', function () {",
+              "  pm.expect(json).to.have.property('id');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
       "name": "1) Registration (POST /v1/auth/registration)",
       "request": {
         "method": "POST",

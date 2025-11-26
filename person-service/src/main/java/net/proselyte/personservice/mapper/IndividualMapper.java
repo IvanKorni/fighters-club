@@ -20,7 +20,10 @@ import static org.springframework.util.CollectionUtils.isEmpty;
 
 @Mapper(
         componentModel = SPRING,
-        injectionStrategy = CONSTRUCTOR
+        injectionStrategy = CONSTRUCTOR,
+        uses = {
+                UserMapper.class,
+        }
 )
 @Setter(onMethod_ = @Autowired)
 public abstract class IndividualMapper {
@@ -33,7 +36,7 @@ public abstract class IndividualMapper {
     @Mapping(target = "user", source = ".", qualifiedByName = "toUser")
     public abstract Individual to(IndividualWriteDto dto);
 
-    @Mapping(target = "nickname", source = "nickname")
+    @Mapping(target = "nickname", source = "user.nickname")
     @Mapping(target = "email", source = "user.email")
     public abstract IndividualDto from(Individual individual);
 
