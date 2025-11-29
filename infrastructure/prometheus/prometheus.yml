@@ -29,6 +29,11 @@ scrape_configs:
     static_configs:
       - targets: [ 'game-api:8094' ]
 
+  - job_name: stats-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ 'stats-api:8095' ]
+
   - job_name: keycloak
     metrics_path: /metrics
     static_configs:
@@ -69,3 +74,7 @@ scrape_configs:
   - job_name: game-postgres
     static_configs:
       - targets: [ 'game-postgres-exporter:9187' ]
+
+  - job_name: stats-postgres
+    static_configs:
+      - targets: [ 'stats-postgres-exporter:9187' ]
