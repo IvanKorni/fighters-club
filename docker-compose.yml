@@ -48,6 +48,23 @@ services:
       timeout: 5s
       retries: 20
 
+  game-postgres:
+    image: postgres:17
+    container_name: game-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: game
+    volumes:
+      - ./infrastructure/databases/game:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -92,6 +109,17 @@ services:
       DATA_SOURCE_NAME: postgresql://postgres:postgres@queue-postgres:5432/queue?sslmode=disable
     ports:
       - "9190:9187"
+
+  game-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: game-postgres-exporter
+    depends_on:
+      game-postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:postgres@game-postgres:5432/game?sslmode=disable
+    ports:
+      - "9191:9187"
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
@@ -289,6 +317,28 @@ services:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:8093/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  game-api:
+    build:
+      context: ./game-service
+      dockerfile: Dockerfile
+    container_name: game-api
+    ports:
+      - "8094:8094"
+    working_dir: /app
+    environment:
+      POSTGRES_HOST: game-postgres
+      POSTGRES_PORT: 5432
+      SPRING_PROFILES_ACTIVE: docker
+      OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+    depends_on:
+      game-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8094/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
