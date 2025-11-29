@@ -4,7 +4,7 @@ info:
   description: REST API для взаимодействия с Person сервисом.
   version: 1.0.0
 servers:
-  - url: http://localhost:8082
+  - url: http://localhost:8092
 
 paths:
   /v1/persons:
@@ -140,7 +140,6 @@ components:
       properties:
         nickname:
           type: string
-          format: email
         email:
           type: string
           format: email
