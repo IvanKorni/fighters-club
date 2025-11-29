@@ -148,7 +148,7 @@ fun getAbsolutePath(nameWithoutExtension: String): Provider<String> {
 
 fun defineJavaPackageName(name: String): String {
     val beforeDash = name.substringBefore('-')
-    val match = Regex("^[a-z]+]").find(beforeDash)
+    val match = Regex("^[a-z]+").find(beforeDash)
     return match?.value ?: beforeDash.lowercase()
 }
 
@@ -188,5 +188,52 @@ tasks.register("generateAllOpenApi") {
 
 tasks.named("compileJava") {
     dependsOn("generateAllOpenApi")
+}
+
+/*
+──────────────────────────────────────────────────────
+============== Building jars ==============
+──────────────────────────────────────────────────────
+*/
+
+val generatedJars = foundSpecifications.map { specFile ->
+    val name = specFile.nameWithoutExtension
+    val generateTaskName = buildGenerateApiTaskName(name)
+    val jarTaskName = buildJarTaskName(name)
+    val outDirProvider = getAbsolutePath(name)
+    val generateSrcDir = outDirProvider.map { File(it).resolve("src/main/java") }
+
+    val sourcesSetName = name
+
+    val sourceSet = sourceSets.create(sourcesSetName) {
+        java.srcDir(generateSrcDir)
+        compileClasspath += sourceSets["main"].compileClasspath
+    }
+
+    val compileTaskName = "compile${sourcesSetName.replaceFirstChar(Char::uppercase)}Java"
+    tasks.register<JavaCompile>(compileTaskName) {
+        source = sourceSet.java
+        classpath = sourceSet.compileClasspath
+        destinationDirectory.set(layout.buildDirectory.dir("classes/${sourcesSetName}"))
+        dependsOn(generateTaskName)
+    }
+
+    tasks.register<Jar>(jarTaskName) {
+        group = "build"
+        archiveBaseName.set(name)
+        destinationDirectory.set(layout.buildDirectory.dir("libs"))
+
+        val classOutput = layout.buildDirectory.dir("classes/${sourcesSetName}")
+        from(classOutput)
+        dependsOn(compileTaskName)
+
+        doFirst {
+            println("Building JAR for $name from compiled classes in ${classOutput.get().asFile}")
+        }
+    }
+}
+
+tasks.named("build") {
+    dependsOn(generatedJars)
 }
 
