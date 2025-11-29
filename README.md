@@ -33,7 +33,7 @@
 1. `POST /v1/auth/registration` -> Individuals API валидирует запрос.
 2. API создаёт запись в Persons Service (`POST /v1/persons`) и получает `individualId`.
 3. API создаёт пользователя в Keycloak и получает `access_token/refresh_token`.
-4. API возвращает токены клиенту. При сбое на этапе 3 выполняется компенсация - `DELETE /v1/persons/compensate-registration/{id}`.
+4. API возвращает токены клиенту. При сбое на этапе 3 выполняется компенсация - `DELETE /v1/persons/{id}` (удаление созданной записи).
 
 **Метрики**: Actuator + Micrometer экспонирует данные для Prometheus. Есть кастомный счётчик логинов: `individual_app_login_count_total` (см. `LoginMetricAspect`).
 **Трассировки**: OpenTelemetry OTLP -> Tempo -> Grafana Explore.
@@ -251,8 +251,7 @@ OpenAPI: `api/openapi/individual-api.yaml`. Swagger UI:
 * `GET /v1/persons` - список
 * `GET /v1/persons/{id}` - получить по id
 * `GET /v1/persons?email=...&email=...` - поиск по e-mail’ам
-* `DELETE /v1/persons/{id}` - мягкое удаление
-* `DELETE /v1/persons/compensate-registration/{id}` - компенсация регистрации (жёсткое удаление)
+* `DELETE /v1/persons/{id}` - удаление
 
 OpenAPI: `person-service/openapi/person-api.yaml`. Swagger UI:
 `http://localhost:8092/swagger-ui/index.html`
