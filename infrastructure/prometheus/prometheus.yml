@@ -19,6 +19,11 @@ scrape_configs:
     static_configs:
       - targets: [ 'persons-api:8092' ]
 
+  - job_name: queue-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ 'queue-api:8093' ]
+
   - job_name: keycloak
     metrics_path: /metrics
     static_configs:
@@ -51,3 +56,7 @@ scrape_configs:
   - job_name: keycloak-postgres
     static_configs:
       - targets: [ 'keycloak-postgres-exporter:9187' ]
+
+  - job_name: queue-postgres
+    static_configs:
+      - targets: [ 'queue-postgres-exporter:9187' ]
