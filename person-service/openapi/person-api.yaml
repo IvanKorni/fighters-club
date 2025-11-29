@@ -94,7 +94,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/IndividualWriteResponseDto'
     delete:
-      summary: soft delete person by id
+      summary: Delete person by id
       operationId: "delete"
       tags:
         - Person
@@ -109,24 +109,6 @@ paths:
         '200':
           description: Successfully deleted
 
-  /v1/persons/compensate-registration/{id}:
-    delete:
-      summary: compensate-registration, hard delete person by id
-      operationId: "compensateRegistration"
-      tags:
-        - Person
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successfully deleted
-
-
 components:
   schemas:
     IndividualWriteResponseDto:
@@ -139,12 +121,15 @@ components:
     IndividualWriteDto:
       type: object
       required: [
-        email
+        email,
+        nickname
       ]
       properties:
         email:
           type: string
           format: email
+        nickname:
+          type: string
 
     IndividualDto:
       type: object
