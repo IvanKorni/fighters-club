@@ -1,4 +1,7 @@
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.jvm.tasks.Jar
+import java.io.File
 
 val versions = mapOf(
     "mapstructVersion" to "1.5.5.Final",
