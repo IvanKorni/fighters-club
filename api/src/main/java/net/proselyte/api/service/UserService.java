@@ -96,7 +96,7 @@ public class UserService {
                                                         );
                                             })
                                             .onErrorResume(err ->
-                                                    personService.compensateRegistration(personId.getId().toString())
+                                                    personService.delete(personId.getId().toString())
                                                             .then(Mono.error(err))
                                             )
                                             .map(tokenResponseMapper::toTokenResponse);

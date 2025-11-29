@@ -31,9 +31,9 @@ public class PersonService {
                 .doOnNext(t -> log.info("Person registered id = [{}]", t.getId()));
     }
 
-    @WithSpan("personService.compensateRegistration")
-    public Mono<Void> compensateRegistration(String id) {
-        return Mono.fromRunnable(() -> personApiClient.compensateRegistration(UUID.fromString(id)))
+    @WithSpan("personService.delete")
+    public Mono<Void> delete(String id) {
+        return Mono.fromRunnable(() -> personApiClient.delete(UUID.fromString(id)))
                 .subscribeOn(Schedulers.boundedElastic())
                 .then();
     }
