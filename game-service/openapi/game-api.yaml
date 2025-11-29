@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  title: Game API
+  description: REST API для управления боем и игровой механикой.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8094
+
+paths:
+  /v1/game/move:
+    post:
+      summary: Отправить ход
+      operationId: makeMove
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveRequest'
+      responses:
+        '202':
+          description: Ход принят к обработке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveResponse'
+        '400':
+          description: Неверный запрос
+        '401':
+          description: Не авторизован
+        '404':
+          description: Матч не найден
+
+  /v1/game/{matchId}:
+    get:
+      summary: Получить информацию о матче
+      operationId: getMatch
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Информация о матче
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResponse'
+        '401':
+          description: Не авторизован
+        '404':
+          description: Матч не найден
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    MoveRequest:
+      type: object
+      required:
+        - matchId
+        - attackTarget
+        - defenseTarget
+        - turnNumber
+      properties:
+        matchId:
+          type: string
+          format: uuid
+        attackTarget:
+          type: string
+          enum: [head, body, legs]
+        defenseTarget:
+          type: string
+          enum: [head, body, legs]
+        turnNumber:
+          type: integer
+          minimum: 1
+
+    MoveResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Move accepted"
+        turnNumber:
+          type: integer
+
+    MatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        player1Id:
+          type: string
+          format: uuid
+        player2Id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [waiting, in_progress, finished]
+        player1HP:
+          type: integer
+        player2HP:
+          type: integer
+        turnNumber:
+          type: integer
+        currentTurnStart:
+          type: string
+          format: date-time
+
