@@ -3,12 +3,9 @@ package net.proselyte.personservice.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.RelationTargetAuditMode;
 
 import javax.validation.constraints.Size;
 
-@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 @Setter
 @Getter
 @Entity
@@ -21,5 +18,4 @@ public class User extends BaseEntity {
     @Size(max = 64)
     @Column(name = "nickname", nullable = false, unique = true, length = 64)
     private String nickname;
-
 }
