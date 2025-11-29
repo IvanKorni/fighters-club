@@ -1,24 +1,23 @@
 package net.proselyte.personservice.mapper;
 
-
 import lombok.Setter;
-
-import net.proselyte.personservice.entity.Individual;
+import net.proselyte.person.dto.IndividualDto;
+import net.proselyte.person.dto.IndividualWriteDto;
 import net.proselyte.personservice.entity.User;
 import net.proselyte.personservice.util.DateTimeUtil;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.Named;
-
 import org.springframework.beans.factory.annotation.Autowired;
 
-
-import net.proselyte.person.dto.IndividualWriteDto;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.mapstruct.InjectionStrategy.CONSTRUCTOR;
 import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
+import static org.springframework.util.CollectionUtils.isEmpty;
 
 @Mapper(
         componentModel = SPRING,
@@ -29,22 +28,29 @@ public abstract class UserMapper {
 
     protected DateTimeUtil dateTimeUtil;
 
-    @Named("toUser")
-    @Mapping(target = "active", constant = "true")
     @Mapping(target = "created", expression = "java(dateTimeUtil.now())")
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
-    @Mapping(target = "nickname", source = "email")
     public abstract User to(IndividualWriteDto dto);
+
+    @Mapping(target = "nickname", source = "nickname")
+    @Mapping(target = "email", source = "email")
+    public abstract IndividualDto from(User user);
+
+    public List<IndividualDto> from(List<User> users) {
+        return isEmpty(users)
+                ? Collections.emptyList()
+                : users.stream()
+                .map(this::from)
+                .collect(Collectors.toList());
+    }
 
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
-    public abstract User update(
+    @Mapping(target = "email", source = "email")
+    @Mapping(target = "nickname", source = "nickname")
+    public abstract void update(
             @MappingTarget
             User user,
             IndividualWriteDto dto
     );
-
-    public User update(Individual individual, IndividualWriteDto dto) {
-        return update(individual.getUser(), dto);
-    }
 }
