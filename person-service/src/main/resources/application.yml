@@ -17,14 +17,6 @@ spring:
       ddl-auto: validate
     properties:
       org.hibernate:
-        envers:
-          autoRegisterListeners: true
-          audit_table_suffix: _history
-          default_schema: person_history
-          store_data_at_delete: true
-          revision_field_name: revision
-          revision_type_field_name: revision_type
-          revision_sequence_name: person_history.revinfo_seq
         hibernate:
           default_schema: person
           show_sql: ${SHOW_SQL:true}

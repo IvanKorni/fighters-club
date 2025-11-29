@@ -12,7 +12,6 @@ val versions = mapOf(
     "logbackClassicVersion" to "1.5.18",
     "comGoogleCodeFindbugs" to "3.0.2",
     "springCloudStarterOpenfeign" to "4.1.1",
-    "hibernateEnversVersion" to "6.4.4.Final",
     "testContainersVersion" to "1.19.3",
     "junitJupiterVersion" to "5.10.0",
     "feignMicrometerVersion" to "13.6"
@@ -71,7 +70,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:${versions["logbackClassicVersion"]}")
 
     // PERSISTENCE
-    implementation("org.hibernate.orm:hibernate-envers:${versions["hibernateEnversVersion"]}")
     implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-database-postgresql")
 
