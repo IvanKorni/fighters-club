@@ -167,3 +167,4 @@ components:
           nullable: true
           description: Рейтинг игрока (ELO)
 
+
