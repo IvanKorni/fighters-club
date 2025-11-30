@@ -26,3 +26,4 @@ COPY --from=build /home/gradle/project/build/libs/*.jar app.jar
 EXPOSE 8094
 CMD ["java", "-jar", "app.jar"]
 
+
