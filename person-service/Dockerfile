@@ -15,7 +15,7 @@ COPY src ./src
 COPY openapi ./openapi
 
 RUN gradle --no-daemon clean build -x test
-RUN gradle publish --info
+RUN gradle publish --info || echo "Warning: Failed to publish to Nexus, continuing build..."
 
 FROM eclipse-temurin:24-jre
 

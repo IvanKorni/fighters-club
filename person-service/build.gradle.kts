@@ -255,10 +255,12 @@ val nexusUrl = System.getenv("NEXUS_URL") ?: System.getProperty("NEXUS_URL")
 val nexusUser = System.getenv("NEXUS_USERNAME") ?: System.getProperty("NEXUS_USERNAME")
 val nexusPassword = System.getenv("NEXUS_PASSWORD") ?: System.getProperty("NEXUS_PASSWORD")
 
-if (nexusUrl.isNullOrBlank() || nexusUser.isNullOrBlank() || nexusPassword.isNullOrBlank()) {
-    throw GradleException(
-        "NEXUS details are not set. Create a .env file with correct properties: " +
-                "NEXUS_URL, NEXUS_USERNAME, NEXUS_PASSWORD"
+val nexusAvailable = !nexusUrl.isNullOrBlank() && !nexusUser.isNullOrBlank() && !nexusPassword.isNullOrBlank()
+
+if (!nexusAvailable) {
+    logger.warn(
+        "NEXUS details are not set. Publishing to Nexus will be skipped. " +
+                "To enable publishing, create a .env file with: NEXUS_URL, NEXUS_USERNAME, NEXUS_PASSWORD"
     )
 }
 
@@ -296,13 +298,15 @@ publishing {
     }
 
     repositories {
-        maven {
-            name = "nexus"
-            url = uri(nexusUrl)
-            isAllowInsecureProtocol = true
-            credentials {
-                username = nexusUser
-                password = nexusPassword
+        if (nexusAvailable) {
+            maven {
+                name = "nexus"
+                url = uri(nexusUrl)
+                isAllowInsecureProtocol = true
+                credentials {
+                    username = nexusUser
+                    password = nexusPassword
+                }
             }
         }
     }
