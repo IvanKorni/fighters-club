@@ -227,6 +227,7 @@ val generatedJars = foundSpecifications.map { specFile ->
     tasks.register<Jar>(jarTaskName) {
         group = "build"
         archiveBaseName.set(name)
+        archiveVersion.set(project.version.toString())
         destinationDirectory.set(layout.buildDirectory.dir("libs"))
 
         val classOutput = layout.buildDirectory.dir("classes/${sourcesSetName}")
@@ -252,7 +253,8 @@ publishing {
             val jarBaseName = name
             val jarTaskName = buildJarTaskName(name)
             val jarTask = tasks.named(jarTaskName, Jar::class.java)
-            val jarFile = layout.buildDirectory.file("libs/$jarBaseName.jar")
+            val jarFileName = "$jarBaseName-${project.version}.jar"
+            val jarFile = layout.buildDirectory.file("libs/$jarFileName")
 
             logger.lifecycle("Configuring publication for $jarBaseName")
 
