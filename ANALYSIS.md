@@ -43,7 +43,7 @@
   - `PUT /v1/persons/{id}` - обновление
   - `DELETE /v1/persons/{id}` - удаление
 - ✅ OpenAPI спецификация (`person-api.yaml`)
-- ✅ Публикация SDK в Nexus
+- ✅ Публикация SDK в mavenLocal()
 - ✅ Dockerfile
 - ✅ Наблюдаемость (Prometheus, OpenTelemetry)
 
@@ -51,7 +51,7 @@
 - ✅ Docker Compose для оркестрации
 - ✅ PostgreSQL для каждого сервиса (отдельные БД)
 - ✅ Keycloak для аутентификации
-- ✅ Nexus для артефактов
+- ✅ Maven Local для артефактов
 - ✅ Prometheus, Grafana, Tempo, Loki для наблюдаемости
 - ✅ Makefile для автоматизации
 

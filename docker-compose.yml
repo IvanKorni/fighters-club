@@ -177,22 +177,6 @@ services:
       timeout: 5s
       retries: 30
 
-  nexus:
-    image: sonatype/nexus3:3.76.0
-    container_name: nexus
-    ports:
-      - "8081:8081"
-    environment:
-      NEXUS_SECURITY_INITIAL_PASSWORD: admin
-      NEXUS_SECURITY_RANDOMPASSWORD: false
-    volumes:
-      - nexus-data:/nexus-data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status" ]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -272,7 +256,6 @@ services:
     volumes:
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
       - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards
-      - nexus-data:/nexus-data
     healthcheck:
       test: [ "CMD", "wget", "--spider", "http://localhost:3000/api/health" ]
       interval: 10s
@@ -281,8 +264,8 @@ services:
 
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
     container_name: api
     environment:
       KEYCLOAK_URL: http://keycloak:8080
@@ -396,7 +379,6 @@ services:
 volumes:
   artifacts:
   tempo_data:
-  nexus-data:
   loki_data:
   loki_chunks:
   loki_index:

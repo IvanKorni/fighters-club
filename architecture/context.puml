@@ -10,7 +10,6 @@ System_Ext(prom, "Prometheus", "Метрики :9090")
 System_Ext(tempo, "Tempo", "Трейсы (OTLP) :3200")
 System_Ext(loki, "Loki", "Логи :3100")
 System_Ext(grafana, "Grafana", "Дашборды :3000")
-System_Ext(nexus, "Nexus", "Maven snapshots :8081")
 
 Rel(dev, system, "REST / JSON")
 Rel(system, keycloak, "OAuth2 / OpenID Connect")
@@ -20,6 +19,5 @@ Rel(system, loki, "Логи (appender/promtail)")
 Rel(grafana, prom, "Чтение метрик")
 Rel(grafana, tempo, "Чтение трейсов")
 Rel(grafana, loki, "Чтение логов")
-Rel(system, nexus, "Publish SDK (person-api)")
 
 @enduml

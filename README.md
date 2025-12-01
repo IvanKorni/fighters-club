@@ -53,8 +53,7 @@ proselyte-system/
 │  ├─ src/main/resources/{application.yml,logback.xml}
 │  ├─ openapi/{individual-api.yaml,keycloak-api.yaml}
 │  ├─ src/test/... (Testcontainers: Keycloak, WireMock, Postgres)
-│  ├─ Dockerfile
-│  └─ .env (переменные доступа к Nexus snapshots)
+│  └─ Dockerfile
 │
 ├─ architecture/                                # архитектурные артефакты
 │
@@ -66,7 +65,7 @@ proselyte-system/
 │  ├─ src/main/resources/{application.yml,logback.xml}
 │  ├─ openapi/person-api.yaml                   # спецификация API
 │  ├─ build.gradle.kts                          # включает openapi-generator и публикацию SDK
-│  └─ Dockerfile                                # билд + publish в локальный Nexus
+│  └─ Dockerfile                                # билд + publish в mavenLocal
 │
 ├─ infrastructure/
 │  ├─ keycloak/realm-config.json                # импорт realm "individual"
@@ -86,7 +85,7 @@ proselyte-system/
 
 ---
 ## Быстрый старт
-> Требуется: **Docker** (compose), **JDK 24**, `make`. Порты по умолчанию: 8080 (Keycloak), 8091 (API), 8092 (Persons), 9090 (Prometheus), 3000 (Grafana), 3200 (Tempo), 3100 (Loki), 8081 (Nexus).
+> Требуется: **Docker** (compose), **JDK 24**, `make`. Порты по умолчанию: 8080 (Keycloak), 8091 (API), 8092 (Persons), 9090 (Prometheus), 3000 (Grafana), 3200 (Tempo), 3100 (Loki).
 ### Вариант A - через `Makefile` (рекомендуется)
 
 ```bash
@@ -96,8 +95,8 @@ make all
 ```
 
 Что делает:
-* поднимает инфраструктуру (Nexus, Keycloak + Postgres, Postgres для persons, Prometheus, Grafana, Tempo, Loki, экспортеры);
-* собирает и публикует SDK из `person-service` в локальный Nexus (snapshot);
+* поднимает инфраструктуру (Keycloak + Postgres, Postgres для persons, Prometheus, Grafana, Tempo, Loki, экспортеры);
+* собирает и публикует SDK из `person-service` в mavenLocal();
 * стартует сервисы.
 
 Проверка:
@@ -137,31 +136,23 @@ curl -s -H "Authorization: Bearer $ACCESS" http://localhost:8091/v1/auth/me
    Вариант A (рекомендуется):
 
    ```bash
-   make infra  # поднимет: nexus keycloak person-postgres prometheus grafana tempo loki
+   make infra  # поднимет: keycloak person-postgres prometheus grafana tempo loki
    ```
 
    Вариант B (чистый docker-compose):
 
    ```bash
-   docker compose up -d nexus keycloak person-postgres prometheus grafana tempo loki
+   docker compose up -d keycloak person-postgres prometheus grafana tempo loki
    ```
 
-   Дождитесь готовности Nexus (`http://localhost:8081`) и Keycloak (`http://localhost:8080`).
+   Дождитесь готовности Keycloak (`http://localhost:8080`).
 
 2. **Публикация SDK (если нужно)**
-   Локальные переменные (`api/.env`) для доступа к Nexus:
-
-   ```env
-   NEXUS_URL=http://localhost:8081/repository/maven-snapshots/
-   NEXUS_USERNAME=admin
-   NEXUS_PASSWORD=admin
-   ```
-
-   Далее:
+   Для локальной разработки SDK публикуется в mavenLocal():
 
    ```bash
    cd person-service
-   ./gradlew clean publish -x test   # опубликует net.proselyte:person-api:*-SNAPSHOT
+   ./gradlew clean build publishToMavenLocal -x test   # опубликует net.proselyte:person-api:*-SNAPSHOT в ~/.m2/repository
    cd ../api
    ./gradlew clean build
    ```
@@ -188,7 +179,6 @@ curl -s -H "Authorization: Bearer $ACCESS" http://localhost:8091/v1/auth/me
 | Individuals API    | 8091        | WebFlux API `/v1/auth/*`, Actuator |
 | Persons Service    | 8092        | CRUD `/v1/persons/*`, Actuator     |
 | Keycloak           | 8080        | Dev-мод, импорт realm `individual` |
-| Nexus              | 8081        | Maven snapshots-репозиторий        |
 | Prometheus         | 9090        | Метрики                            |
 | Grafana            | 3000        | Dashboard + Explore                |
 | Tempo              | 3200        | Хранилище трассировок (OTLP)       |
@@ -225,11 +215,11 @@ Prometheus уже сконфигурирован на сбор `/actuator/promet
 * Datasource: Postgres на `localhost:5434`
 * Flyway включён; JPA + Hibernate; метрики и OTLP аналогично API.
 
-### Nexus/SDK
+### SDK (Maven Local)
 
-* `api/.env` содержит `NEXUS_URL/NEXUS_USERNAME/NEXUS_PASSWORD` (локально `admin/admin`).
-* `person-service` публикует артефакт клиента `net.proselyte:person-api:*` (генерируется из `openapi/person-api.yaml`).
-* Individuals API использует эти SDK через OpenFeign.
+* `person-service` публикует артефакт клиента `net.proselyte:person-api:*` в mavenLocal() (генерируется из `openapi/person-api.yaml`).
+* Для публикации выполните: `cd person-service && ./gradlew publishToMavenLocal`
+* Individuals API использует эти SDK через OpenFeign из mavenLocal().
 ---
 
 ## API и OpenAPI
@@ -358,7 +348,7 @@ otel:
 ## Структура каталогов
 
 * `api/` - Individuals API (WebFlux). Аутентификация, координация регистрации, интеграция с Keycloak и Persons Service, OpenAPI (`individual-api.yaml`, `keycloak-api.yaml`), интеграционные тесты (Keycloak/WireMock), кастомные метрики.
-* `person-service/` - CRUD по персональным данным, JPA + Flyway, экспорт OpenAPI и публикация клиентской библиотеки `person-api` в локальный Nexus.
+* `person-service/` - CRUD по персональным данным, JPA + Flyway, экспорт OpenAPI и публикация клиентской библиотеки `person-api` в mavenLocal().
 * `infrastructure/` - конфигурации Grafana/Prometheus/Tempo/Loki и Keycloak realm.
 * `docker-compose.yml` - инфраструктура + сервисы.
 * `Makefile` - сценарии `make up/build-artifacts/start/stop/logs/rebuild`.
