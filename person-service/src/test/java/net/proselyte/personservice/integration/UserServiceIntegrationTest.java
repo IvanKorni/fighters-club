@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserServiceIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
             .withDatabaseName("person_test")
             .withUsername("postgres")
             .withPassword("postgres");
@@ -41,8 +41,10 @@ class UserServiceIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.flyway.enabled", () -> "false");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.flyway.enabled", () -> "true");
+        registry.add("spring.flyway.baseline-on-migrate", () -> "true");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("spring.jpa.properties.hibernate.default_schema", () -> "person");
     }
 
     @Autowired
