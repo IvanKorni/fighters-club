@@ -144,22 +144,24 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.m2/repository
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: Build and test Person Service
+        if: |
+          needs.detect-changes.outputs.person-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true' ||
+          needs.detect-changes.outputs.api == 'true'
+        working-directory: ./person-service
+        run: ./gradlew build publishAllPublicationsToMavenLocalRepository --no-daemon
 
       - name: Build and test API
         if: |
           needs.detect-changes.outputs.api == 'true' ||
           needs.detect-changes.outputs.infrastructure == 'true'
         working-directory: ./api
-        run: ./gradlew build --no-daemon
-
-      - name: Build and test Person Service
-        if: |
-          needs.detect-changes.outputs.person-service == 'true' ||
-          needs.detect-changes.outputs.infrastructure == 'true'
-        working-directory: ./person-service
         run: ./gradlew build --no-daemon
 
       - name: Build and test Game Service
