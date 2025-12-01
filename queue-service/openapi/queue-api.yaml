@@ -1,0 +1,74 @@
+openapi: 3.0.0
+info:
+  title: Queue API
+  description: REST API для взаимодействия с Queue/Matchmaking сервисом.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8093
+
+paths:
+  /v1/queue/join:
+    post:
+      summary: Добавить пользователя в очередь матчмейкинга
+      operationId: "joinQueue"
+      tags:
+        - Queue
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Пользователь успешно добавлен в очередь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueJoinResponseDto'
+        '401':
+          description: Не авторизован
+        '400':
+          description: Пользователь уже в очереди
+
+  /v1/queue/leave:
+    post:
+      summary: Удалить пользователя из очереди
+      operationId: "leaveQueue"
+      tags:
+        - Queue
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Пользователь успешно удален из очереди
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueLeaveResponseDto'
+        '401':
+          description: Не авторизован
+        '404':
+          description: Пользователь не найден в очереди
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    QueueJoinResponseDto:
+      type: object
+      required: [ message ]
+      properties:
+        message:
+          type: string
+          example: "waiting"
+          description: Сообщение о статусе очереди
+
+    QueueLeaveResponseDto:
+      type: object
+      required: [ message ]
+      properties:
+        message:
+          type: string
+          example: "left"
+          description: Сообщение о выходе из очереди
