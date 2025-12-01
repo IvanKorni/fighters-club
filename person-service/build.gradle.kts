@@ -250,23 +250,23 @@ publishing {
         foundSpecifications.forEach { specFile ->
             val name = specFile.nameWithoutExtension
             val jarBaseName = name
-            var jarFile = file("build/libs")
-                .listFiles()
-                ?.firstOrNull { it.name.contains(name) && (it.extension == "jar" || it.extension == "zip") }
+            val jarTaskName = buildJarTaskName(name)
+            val jarTask = tasks.named(jarTaskName, Jar::class.java)
+            val jarFile = layout.buildDirectory.file("libs/$jarBaseName.jar")
 
-            if (jarFile != null) {
-                logger.lifecycle("publishing: ${jarFile.name}")
+            logger.lifecycle("Configuring publication for $jarBaseName")
 
-                create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
-                    artifact(jarFile)
-                    groupId = "net.proselyte"
-                    artifactId = jarBaseName
-                    version = "1.0.0-SNAPSHOT"
+            create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
+                artifact(jarFile) {
+                    builtBy(jarTask)
+                }
+                groupId = "net.proselyte"
+                artifactId = jarBaseName
+                version = "1.0.0-SNAPSHOT"
 
-                    pom {
-                        this.name.set("Generated API $jarBaseName")
-                        this.description.set("OpenAPI generated code for $jarBaseName")
-                    }
+                pom {
+                    this.name.set("Generated API $jarBaseName")
+                    this.description.set("OpenAPI generated code for $jarBaseName")
                 }
             }
         }
