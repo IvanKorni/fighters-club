@@ -238,6 +238,24 @@ val generatedJars = foundSpecifications.map { specFile ->
     }
 }
 
+//// Add compiled classes from generated sourceSets to main sourceSet compileClasspath
+//// This ensures IDE can resolve the generated classes
+//afterEvaluate {
+//    foundSpecifications.forEach { specFile ->
+//        val name = specFile.nameWithoutExtension
+//        val sourceSet = sourceSets.findByName(name)
+//        if (sourceSet != null) {
+//            sourceSets.named("main") {
+//                compileClasspath += sourceSet.output
+//            }
+//            // Also add to runtime classpath
+//            sourceSets.named("main") {
+//                runtimeClasspath += sourceSet.output
+//            }
+//        }
+//    }
+//}
+
 tasks.named("build") {
     dependsOn(generatedJars)
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.proselyte.queue.api.QueueApi;
 import net.proselyte.queue.dto.QueueJoinResponseDto;
 import net.proselyte.queue.dto.QueueLeaveResponseDto;
+import net.proselyte.queue.dto.QueueStatusResponseDto;
 import net.proselyte.queueservice.service.QueueService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -35,6 +36,13 @@ public class QueueRestControllerV1 implements QueueApi {
         
         QueueLeaveResponseDto response = new QueueLeaveResponseDto();
         response.setMessage("left");
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<QueueStatusResponseDto> getQueueStatus() {
+        UUID userId = getCurrentUserId();
+        QueueStatusResponseDto response = queueService.getQueueStatus(userId);
         return ResponseEntity.ok(response);
     }
 
