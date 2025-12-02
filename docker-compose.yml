@@ -87,12 +87,16 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
+    command: redis-server /etc/redis/redis.conf
+    volumes:
+      - ./infrastructure/redis/redis.conf:/etc/redis/redis.conf:ro
+      - redis_data:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 10s
 
   person-postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
@@ -383,3 +387,4 @@ volumes:
   loki_chunks:
   loki_index:
   loki_rules:
+  redis_data:
