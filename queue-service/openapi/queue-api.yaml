@@ -24,8 +24,16 @@ paths:
                 $ref: '#/components/schemas/QueueJoinResponseDto'
         '401':
           description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '400':
           description: Пользователь уже в очереди
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /v1/queue/leave:
     post:
@@ -44,8 +52,44 @@ paths:
                 $ref: '#/components/schemas/QueueLeaveResponseDto'
         '401':
           description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Пользователь не найден в очереди
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/queue/status:
+    get:
+      summary: Получить статус очереди для текущего пользователя
+      operationId: "getQueueStatus"
+      tags:
+        - Queue
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Статус очереди
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueStatusResponseDto'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден в очереди
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -57,12 +101,24 @@ components:
   schemas:
     QueueJoinResponseDto:
       type: object
-      required: [ message ]
+      required: [ message, status ]
       properties:
         message:
           type: string
           example: "waiting"
           description: Сообщение о статусе очереди
+        status:
+          type: string
+          enum: [WAITING, MATCHED, LEFT]
+          example: "WAITING"
+          description: Статус в очереди
+        joinedAt:
+          type: string
+          format: date-time
+          description: Время входа в очередь
+        position:
+          type: integer
+          description: Позиция в очереди (если доступна)
 
     QueueLeaveResponseDto:
       type: object
@@ -72,3 +128,33 @@ components:
           type: string
           example: "left"
           description: Сообщение о выходе из очереди
+
+    QueueStatusResponseDto:
+      type: object
+      required: [ status ]
+      properties:
+        status:
+          type: string
+          enum: [WAITING, MATCHED, LEFT]
+          example: "WAITING"
+          description: Текущий статус в очереди
+        joinedAt:
+          type: string
+          format: date-time
+          description: Время входа в очередь
+        waitingTime:
+          type: integer
+          description: Время ожидания в секундах
+        position:
+          type: integer
+          description: Позиция в очереди (если доступна)
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+        status:
+          type: integer
+          description: HTTP статус код
