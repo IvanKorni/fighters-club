@@ -17,7 +17,7 @@ public class RedisConfig {
         template.setValueSerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new StringRedisSerializer());
-        // TODO: Configure Redis for queue storage
+        template.afterPropertiesSet();
         return template;
     }
 }
