@@ -20,3 +20,4 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
     List<Match> findAllByPlayerIdAndStatus(@Param("playerId") UUID playerId, @Param("status") Match.MatchStatus status);
 }
 
+

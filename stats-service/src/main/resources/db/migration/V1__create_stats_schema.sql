@@ -39,3 +39,4 @@ CREATE INDEX idx_matches_player1_id ON stats.matches(player1_id);
 CREATE INDEX idx_matches_player2_id ON stats.matches(player2_id);
 CREATE INDEX idx_matches_created ON stats.matches(created DESC);
 
+

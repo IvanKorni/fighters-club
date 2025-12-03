@@ -195,3 +195,187 @@ jobs:
             **/build/reports/tests/**/*
           retention-days: 7
 
+  build-and-push-images:
+    needs: [detect-changes, build-and-test]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' &&
+      (needs.detect-changes.outputs.api == 'true' ||
+       needs.detect-changes.outputs.person-service == 'true' ||
+       needs.detect-changes.outputs.game-service == 'true' ||
+       needs.detect-changes.outputs.queue-service == 'true' ||
+       needs.detect-changes.outputs.stats-service == 'true' ||
+       needs.detect-changes.outputs.infrastructure == 'true')
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Person Service
+        if: |
+          needs.detect-changes.outputs.person-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true' ||
+          needs.detect-changes.outputs.api == 'true'
+        id: meta-person
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/person-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Person Service
+        if: |
+          needs.detect-changes.outputs.person-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true' ||
+          needs.detect-changes.outputs.api == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./person-service
+          file: ./person-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta-person.outputs.tags }}
+          labels: ${{ steps.meta-person.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for API
+        if: |
+          needs.detect-changes.outputs.api == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/api
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push API
+        if: |
+          needs.detect-changes.outputs.api == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # API depends on person-service, so we need to build person-service first
+          # The Dockerfile already handles this dependency
+
+      - name: Extract metadata for Game Service
+        if: |
+          needs.detect-changes.outputs.game-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        id: meta-game
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/game-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Game Service
+        if: |
+          needs.detect-changes.outputs.game-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./game-service
+          file: ./game-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta-game.outputs.tags }}
+          labels: ${{ steps.meta-game.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Queue Service
+        if: |
+          needs.detect-changes.outputs.queue-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        id: meta-queue
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/queue-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Queue Service
+        if: |
+          needs.detect-changes.outputs.queue-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./queue-service
+          file: ./queue-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta-queue.outputs.tags }}
+          labels: ${{ steps.meta-queue.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Stats Service
+        if: |
+          needs.detect-changes.outputs.stats-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        id: meta-stats
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/stats-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Stats Service
+        if: |
+          needs.detect-changes.outputs.stats-service == 'true' ||
+          needs.detect-changes.outputs.infrastructure == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./stats-service
+          file: ./stats-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta-stats.outputs.tags }}
+          labels: ${{ steps.meta-stats.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+

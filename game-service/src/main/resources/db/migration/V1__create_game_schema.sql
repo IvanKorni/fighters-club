@@ -47,3 +47,4 @@ CREATE INDEX idx_moves_match_id ON game.moves(match_id);
 CREATE INDEX idx_moves_player_id ON game.moves(player_id);
 CREATE INDEX idx_moves_match_turn ON game.moves(match_id, turn_number);
 
+

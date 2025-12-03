@@ -11,3 +11,4 @@ public interface StatsRepository extends JpaRepository<Stats, UUID> {
     Optional<Stats> findByUserId(UUID userId);
 }
 
+
