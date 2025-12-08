@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: persons-api
+  namespace: proselyte-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: persons-api
+  template:
+    metadata:
+      labels:
+        app: persons-api
+    spec:
+      containers:
+        - name: persons-api
+          image:  persons-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8092
+          env:
+            - name: POSTGRES_HOST
+              value: "person-postgres"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: OTLP_EXPORTER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: OTLP_EXPORTER_ENDPOINT
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8092
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8092
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: persons-api
+  namespace: proselyte-system
+spec:
+  selector:
+    app: persons-api
+  ports:
+    - port: 8092
+      targetPort: 8092
+  type: ClusterIP
