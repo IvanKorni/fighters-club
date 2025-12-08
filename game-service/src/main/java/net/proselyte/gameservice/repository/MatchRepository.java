@@ -19,5 +19,3 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
     @Query("SELECT m FROM Match m WHERE (m.player1Id = :playerId OR m.player2Id = :playerId) AND m.status = :status")
     List<Match> findAllByPlayerIdAndStatus(@Param("playerId") UUID playerId, @Param("status") Match.MatchStatus status);
 }
-
-

@@ -72,6 +72,3 @@ public class UserService {
         return new IndividualWriteResponseDto(user.getId().toString());
     }
 }
-
-
-

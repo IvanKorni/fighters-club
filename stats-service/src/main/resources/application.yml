@@ -56,6 +56,3 @@ otel:
     exporter: none
 logging:
   config: "classpath:logback.xml"
-
-
-

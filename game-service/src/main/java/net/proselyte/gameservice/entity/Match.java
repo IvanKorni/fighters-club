@@ -73,5 +73,3 @@ public class Match {
         FINISHED
     }
 }
-
-

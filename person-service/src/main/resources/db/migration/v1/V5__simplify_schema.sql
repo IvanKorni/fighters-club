@@ -30,6 +30,3 @@ BEGIN
         ALTER TABLE person.users ADD CONSTRAINT uk_users_nickname UNIQUE (nickname);
     END IF;
 END $$;
-
-
-

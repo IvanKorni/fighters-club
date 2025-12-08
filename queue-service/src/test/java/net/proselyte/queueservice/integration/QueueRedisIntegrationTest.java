@@ -244,5 +244,3 @@ class QueueRedisIntegrationTest {
         assertTrue(users == null || users.isEmpty());
     }
 }
-
-

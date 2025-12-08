@@ -21,5 +21,3 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         @Param("to") Instant to
     );
 }
-
-

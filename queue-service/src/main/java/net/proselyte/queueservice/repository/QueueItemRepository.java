@@ -12,5 +12,3 @@ public interface QueueItemRepository extends JpaRepository<QueueItem, UUID> {
     
     void deleteByUserId(UUID userId);
 }
-
-

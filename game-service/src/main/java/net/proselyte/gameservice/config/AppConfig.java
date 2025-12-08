@@ -6,6 +6,3 @@ import org.springframework.context.annotation.Configuration;
 public class AppConfig {
     // Configuration for Game Service
 }
-
-
-
