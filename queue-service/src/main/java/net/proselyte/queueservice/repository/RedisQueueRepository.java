@@ -169,5 +169,11 @@ public class RedisQueueRepository {
                 .rangeWithScores(QUEUE_KEY, start, end);
         return players != null ? players : Set.of();
     }
+
+    public Set<String> findPlayersByScoreRange(long minScore, long maxScore, int limit) {
+        Set<String> players = redisTemplate.opsForZSet()
+                .rangeByScore(QUEUE_KEY, minScore, maxScore, 0, limit);
+        return players != null ? players : Set.of();
+    }
 }
 
