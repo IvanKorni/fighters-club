@@ -4,7 +4,7 @@ info:
   description: REST API для взаимодействия с Person сервисом.
   version: 1.0.0
 servers:
-  - url: http://localhost:8082
+  - url: http://localhost:8092
 
 paths:
   /v1/persons:
@@ -94,7 +94,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/IndividualWriteResponseDto'
     delete:
-      summary: soft delete person by id
+      summary: Delete person by id
       operationId: "delete"
       tags:
         - Person
@@ -109,24 +109,6 @@ paths:
         '200':
           description: Successfully deleted
 
-  /v1/persons/compensate-registration/{id}:
-    delete:
-      summary: compensate-registration, hard delete person by id
-      operationId: "compensateRegistration"
-      tags:
-        - Person
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successfully deleted
-
-
 components:
   schemas:
     IndividualWriteResponseDto:
@@ -140,81 +122,27 @@ components:
       type: object
       required: [
         email,
-        firstName,
-        lastName,
-        passport_number,
-        phone_number,
-        address,
+        nickname
       ]
       properties:
-        firstName:
-          type: string
-          format: email
-        lastName:
-          type: string
-          format: email
         email:
           type: string
           format: email
-        passport_number:
-          type: string
-        phone_number:
-          type: string
-        address:
-          $ref: '#/components/schemas/AddressWriteDto'
-
-    AddressWriteDto:
-      type: object
-      required: [ ]
-      properties:
-        address:
-          type: string
-        zip_code:
-          type: string
-        city:
-          type: string
-        country_code:
+        nickname:
           type: string
 
     IndividualDto:
       type: object
       required: [
         email,
-        firstName,
-        lastName,
-        passport_number,
-        phone_number,
-        address,
+        nickname,
       ]
       properties:
-        firstName:
+        nickname:
           type: string
-          format: email
-        lastName:
-          type: string
-          format: email
         email:
           type: string
           format: email
-        passport_number:
-          type: string
-        phone_number:
-          type: string
-        address:
-          $ref: '#/components/schemas/AddressDto'
-
-    AddressDto:
-      type: object
-      required: [ ]
-      properties:
-        address:
-          type: string
-        zip_code:
-          type: string
-        city:
-          type: string
-        country_code:
-          type: string
 
     IndividualPageDto:
       type: object

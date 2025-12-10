@@ -12,7 +12,6 @@ val versions = mapOf(
     "logbackClassicVersion" to "1.5.18",
     "comGoogleCodeFindbugs" to "3.0.2",
     "springCloudStarterOpenfeign" to "4.1.1",
-    "hibernateEnversVersion" to "6.4.4.Final",
     "testContainersVersion" to "1.19.3",
     "junitJupiterVersion" to "5.10.0",
     "feignMicrometerVersion" to "13.6"
@@ -71,7 +70,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:${versions["logbackClassicVersion"]}")
 
     // PERSISTENCE
-    implementation("org.hibernate.orm:hibernate-envers:${versions["hibernateEnversVersion"]}")
     implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-database-postgresql")
 
@@ -229,6 +227,7 @@ val generatedJars = foundSpecifications.map { specFile ->
     tasks.register<Jar>(jarTaskName) {
         group = "build"
         archiveBaseName.set(name)
+        archiveVersion.set(project.version.toString())
         destinationDirectory.set(layout.buildDirectory.dir("libs"))
 
         val classOutput = layout.buildDirectory.dir("classes/${sourcesSetName}")
@@ -243,30 +242,7 @@ val generatedJars = foundSpecifications.map { specFile ->
 
 /*
 ──────────────────────────────────────────────────────
-============== Resolve NEXUS credentials ==============
-──────────────────────────────────────────────────────
-*/
-
-file(".env").takeIf { it.exists() }?.readLines()?.forEach {
-    val (k, v) = it.split("=", limit = 2)
-    System.setProperty(k.trim(), v.trim())
-    logger.lifecycle("${k.trim()}=${v.trim()}")
-}
-
-val nexusUrl = System.getenv("NEXUS_URL") ?: System.getProperty("NEXUS_URL")
-val nexusUser = System.getenv("NEXUS_USERNAME") ?: System.getProperty("NEXUS_USERNAME")
-val nexusPassword = System.getenv("NEXUS_PASSWORD") ?: System.getProperty("NEXUS_PASSWORD")
-
-if (nexusUrl.isNullOrBlank() || nexusUser.isNullOrBlank() || nexusPassword.isNullOrBlank()) {
-    throw GradleException(
-        "NEXUS details are not set. Create a .env file with correct properties: " +
-                "NEXUS_URL, NEXUS_USERNAME, NEXUS_PASSWORD"
-    )
-}
-
-/*
-──────────────────────────────────────────────────────
-============== Nexus Publishing ==============
+============== Maven Local Publishing ==============
 ──────────────────────────────────────────────────────
 */
 
@@ -275,37 +251,30 @@ publishing {
         foundSpecifications.forEach { specFile ->
             val name = specFile.nameWithoutExtension
             val jarBaseName = name
-            var jarFile = file("build/libs")
-                .listFiles()
-                ?.firstOrNull { it.name.contains(name) && (it.extension == "jar" || it.extension == "zip") }
+            val jarTaskName = buildJarTaskName(name)
+            val jarTask = tasks.named(jarTaskName, Jar::class.java)
+            val jarFileName = "$jarBaseName-${project.version}.jar"
+            val jarFile = layout.buildDirectory.file("libs/$jarFileName")
 
-            if (jarFile != null) {
-                logger.lifecycle("publishing: ${jarFile.name}")
+            logger.lifecycle("Configuring publication for $jarBaseName")
 
-                create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
-                    artifact(jarFile)
-                    groupId = "net.proselyte"
-                    artifactId = jarBaseName
-                    version = "1.0.0-SNAPSHOT"
+            create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
+                artifact(jarFile) {
+                    builtBy(jarTask)
+                }
+                groupId = "net.proselyte"
+                artifactId = jarBaseName
+                version = "1.0.0-SNAPSHOT"
 
-                    pom {
-                        this.name.set("Generated API $jarBaseName")
-                        this.description.set("OpenAPI generated code for $jarBaseName")
-                    }
+                pom {
+                    this.name.set("Generated API $jarBaseName")
+                    this.description.set("OpenAPI generated code for $jarBaseName")
                 }
             }
         }
     }
 
     repositories {
-        maven {
-            name = "nexus"
-            url = uri(nexusUrl)
-            isAllowInsecureProtocol = true
-            credentials {
-                username = nexusUser
-                password = nexusPassword
-            }
-        }
+        mavenLocal()
     }
 }

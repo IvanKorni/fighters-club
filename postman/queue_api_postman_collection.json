@@ -1,0 +1,458 @@
+{
+  "info": {
+    "name": "Queue API Collection",
+    "_postman_id": "4e9c3f85-0b3d-5e6f-0a0d-22d2d5f9d002",
+    "description": "Готовые запросы для Queue/Matchmaking API. Все endpoints требуют Bearer токен авторизации.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8093" },
+    { "key": "individualsApiUrl", "value": "http://localhost:8091" },
+    { "key": "access_token", "value": "", "description": "Bearer токен для авторизации. Автоматически получается через Individuals API" },
+    { "key": "refresh_token", "value": "", "description": "Refresh токен для обновления access_token" },
+    { "key": "email", "value": "user+{{timestamp}}@example.com" },
+    { "key": "password", "value": "Qwerty_123" },
+    { "key": "nickname", "value": "TestUser{{timestamp}}" }
+  ],
+  "item": [
+    {
+      "name": "0) Setup variables (timestamp/email)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const ts = Date.now();",
+              "pm.collectionVariables.set('timestamp', String(ts));",
+              "if (!pm.collectionVariables.get('email') || pm.collectionVariables.get('email').includes('{{timestamp}}')) {",
+              "  pm.collectionVariables.set('email', `user+${ts}@example.com`);",
+              "}",
+              "if (!pm.collectionVariables.get('nickname') || pm.collectionVariables.get('nickname').includes('{{timestamp}}')) {",
+              "  pm.collectionVariables.set('nickname', `TestUser${ts}`);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Variables prepared', function () {",
+              "  pm.expect(pm.collectionVariables.get('timestamp')).to.exist;",
+              "  pm.expect(pm.collectionVariables.get('email')).to.include('@');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{individualsApiUrl}}/actuator/health"
+      }
+    },
+    {
+      "name": "1) Registration (POST /v1/auth/registration)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has tokens', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "  pm.expect(json).to.have.property('refresh_token');",
+              "});",
+              "if (json && json.access_token) {",
+              "  pm.collectionVariables.set('access_token', json.access_token);",
+              "  console.log('Token saved successfully. Length:', json.access_token.length);",
+              "  console.log('Token preview:', json.access_token.substring(0, 50) + '...');",
+              "} else {",
+              "  console.log('ERROR: No access_token in response!');",
+              "  console.log('Response:', JSON.stringify(json));",
+              "}",
+              "if (json && json.refresh_token) pm.collectionVariables.set('refresh_token', json.refresh_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"confirm_password\": \"{{password}}\",\n  \"nickname\": \"{{nickname}}\"\n}"
+        },
+        "url": "{{individualsApiUrl}}/v1/auth/registration"
+      }
+    },
+    {
+      "name": "2) Login (POST /v1/auth/login)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('TokenResponse structure', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "  pm.expect(json).to.have.property('refresh_token');",
+              "});",
+              "if (json.access_token) {",
+              "  pm.collectionVariables.set('access_token', json.access_token);",
+              "  console.log('Token saved successfully. Length:', json.access_token.length);",
+              "  console.log('Token preview:', json.access_token.substring(0, 50) + '...');",
+              "} else {",
+              "  console.log('ERROR: No access_token in response!');",
+              "  console.log('Response:', JSON.stringify(json));",
+              "}",
+              "if (json.refresh_token) pm.collectionVariables.set('refresh_token', json.refresh_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": "{{individualsApiUrl}}/v1/auth/login"
+      }
+    },
+    {
+      "name": "3) Queue Service - Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Service is healthy', function () {",
+              "  pm.expect([200, 503]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/actuator/health"
+      }
+    },
+    {
+      "name": "4) Join Queue (POST /v1/queue/join)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const token = pm.collectionVariables.get('access_token');",
+              "if (!token) {",
+              "  console.log('ERROR: access_token not set. Please run Registration or Login request first.');",
+              "  throw new Error('access_token is required');",
+              "}",
+              "console.log('Using access_token:', token ? token.substring(0, 50) + '...' : 'NOT SET');",
+              "console.log('Token length:', token ? token.length : 0);",
+              "const authHeader = 'Bearer ' + token;",
+              "console.log('Authorization header will be:', authHeader.substring(0, 60) + '...');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "console.log('Response status:', pm.response.code);",
+              "console.log('Response body:', pm.response.text());",
+              "if (pm.response.code === 401) {",
+              "  console.log('401 Unauthorized - Token might be invalid or expired');",
+              "  console.log('Current access_token:', pm.collectionVariables.get('access_token') ? pm.collectionVariables.get('access_token').substring(0, 50) + '...' : 'NOT SET');",
+              "}",
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "let json = {};",
+              "try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has status field', function () {",
+              "  pm.expect(json).to.have.property('status');",
+              "});",
+              "pm.test('Status is WAITING', function () {",
+              "  if (json.status) {",
+              "    pm.expect(json.status).to.be.oneOf(['WAITING', 'MATCHED', 'LEFT']);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/v1/queue/join"
+      }
+    },
+    {
+      "name": "5) Get Queue Status (GET /v1/queue/status)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('access_token')) {",
+              "  console.log('Warning: access_token not set. Please run Registration or Login request first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "let json = {};",
+              "try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has status field', function () {",
+              "  pm.expect(json).to.have.property('status');",
+              "});",
+              "pm.test('Status is valid enum value', function () {",
+              "  if (json.status) {",
+              "    pm.expect(json.status).to.be.oneOf(['WAITING', 'MATCHED', 'LEFT']);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/v1/queue/status"
+      }
+    },
+    {
+      "name": "6) Leave Queue (POST /v1/queue/leave)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('access_token')) {",
+              "  console.log('Warning: access_token not set. Please run Registration or Login request first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "let json = {};",
+              "try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has message field', function () {",
+              "  pm.expect(json).to.have.property('message');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/v1/queue/leave"
+      }
+    },
+    {
+      "name": "7) Negative - Join Queue without token (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 401 Unauthorized', function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/v1/queue/join"
+      }
+    },
+    {
+      "name": "8) Negative - Get Status without token (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 401 Unauthorized', function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/v1/queue/status"
+      }
+    },
+    {
+      "name": "9) Negative - Leave Queue without token (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 401 Unauthorized', function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/v1/queue/leave"
+      }
+    },
+    {
+      "name": "10) Negative - Leave Queue when not in queue (404)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('access_token')) {",
+              "  console.log('Warning: access_token not set. Please run Registration or Login request first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404 Not Found', function () {",
+              "  pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/v1/queue/leave"
+      }
+    },
+    {
+      "name": "11) Negative - Join Queue twice (400)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('access_token')) {",
+              "  console.log('Warning: access_token not set. Please run Registration or Login request first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400 Bad Request', function () {",
+              "  pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/v1/queue/join"
+      }
+    }
+  ]
+}

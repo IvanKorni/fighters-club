@@ -1,0 +1,308 @@
+openapi: 3.0.0
+info:
+  title: Stats API
+  description: REST API для получения статистики и истории матчей.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8095
+
+paths:
+  /v1/matches:
+    get:
+      summary: Получить список матчей пользователя
+      operationId: getMatches
+      tags:
+        - Stats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: ID пользователя (если не указан, используется текущий пользователь)
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Начало периода
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Конец периода
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Номер страницы
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Размер страницы
+      responses:
+        '200':
+          description: Список матчей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchesPageResponse'
+        '401':
+          description: Не авторизован
+
+  /v1/matches/{matchId}:
+    get:
+      summary: Получить детальную информацию о матче
+      operationId: getMatchById
+      tags:
+        - Stats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID матча
+      responses:
+        '200':
+          description: Детальная информация о матче
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchDetailResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Матч не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/stats:
+    get:
+      summary: Получить статистику пользователя
+      operationId: getStats
+      tags:
+        - Stats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: ID пользователя (если не указан, используется текущий пользователь)
+      responses:
+        '200':
+          description: Статистика пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '401':
+          description: Не авторизован
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    MatchResponse:
+      type: object
+      required: [ id, player1Id, player2Id, status, createdAt ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID матча
+        player1Id:
+          type: string
+          format: uuid
+          description: ID первого игрока
+        player2Id:
+          type: string
+          format: uuid
+          description: ID второго игрока
+        player1Nickname:
+          type: string
+          description: Никнейм первого игрока
+        player2Nickname:
+          type: string
+          description: Никнейм второго игрока
+        winnerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID победителя (если матч завершен)
+        status:
+          type: string
+          enum: [WAITING, IN_PROGRESS, FINISHED]
+          description: Статус матча
+        duration:
+          type: integer
+          description: Длительность матча в секундах
+        turnCount:
+          type: integer
+          description: Количество ходов в матче
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания матча
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время завершения матча
+
+    MatchesPageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchResponse'
+        total:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+
+    MatchDetailResponse:
+      type: object
+      required: [ id, player1Id, player2Id, status, createdAt ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID матча
+        player1Id:
+          type: string
+          format: uuid
+          description: ID первого игрока
+        player2Id:
+          type: string
+          format: uuid
+          description: ID второго игрока
+        player1Nickname:
+          type: string
+          description: Никнейм первого игрока
+        player2Nickname:
+          type: string
+          description: Никнейм второго игрока
+        winnerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID победителя (если матч завершен)
+        status:
+          type: string
+          enum: [WAITING, IN_PROGRESS, FINISHED]
+          description: Статус матча
+        duration:
+          type: integer
+          description: Длительность матча в секундах
+        turnCount:
+          type: integer
+          description: Количество ходов в матче
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания матча
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время завершения матча
+        player1FinalHP:
+          type: integer
+          nullable: true
+          description: Финальное здоровье первого игрока
+        player2FinalHP:
+          type: integer
+          nullable: true
+          description: Финальное здоровье второго игрока
+
+    StatsResponse:
+      type: object
+      required: [ userId, wins, losses, draws, totalMatches ]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: ID пользователя
+        wins:
+          type: integer
+          minimum: 0
+          description: Количество побед
+        losses:
+          type: integer
+          minimum: 0
+          description: Количество поражений
+        draws:
+          type: integer
+          minimum: 0
+          description: Количество ничьих
+        totalMatches:
+          type: integer
+          minimum: 0
+          description: Общее количество матчей
+        winRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Процент побед (0-100)
+        averageMatchDuration:
+          type: integer
+          minimum: 0
+          description: Средняя длительность матча в секундах
+        rating:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Рейтинг игрока (ELO)
+        longestMatchDuration:
+          type: integer
+          nullable: true
+          description: Длительность самого долгого матча в секундах
+        shortestMatchDuration:
+          type: integer
+          nullable: true
+          description: Длительность самого короткого матча в секундах
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+        status:
+          type: integer
+          description: HTTP статус код
+
+

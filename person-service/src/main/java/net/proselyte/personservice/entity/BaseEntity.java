@@ -20,11 +20,6 @@ public class BaseEntity {
     private UUID id;
 
     @NotNull
-    @ColumnDefault("true")
-    @Column(name = "active", nullable = false)
-    private Boolean active;
-
-    @NotNull
     @ColumnDefault("(now) AT TIME ZONE 'utc'::text")
     @Column(name = "created", nullable = false)
     private Instant created;

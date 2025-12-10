@@ -6,7 +6,8 @@ import net.proselyte.person.dto.IndividualDto;
 import net.proselyte.person.dto.IndividualPageDto;
 import net.proselyte.person.dto.IndividualWriteDto;
 import net.proselyte.person.dto.IndividualWriteResponseDto;
-import net.proselyte.personservice.service.IndividualService;
+import net.proselyte.personservice.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,40 +19,34 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IndividualRestControllerV1 implements PersonApi {
 
-    private final IndividualService individualService;
-
-    @Override
-    public ResponseEntity<Void> compensateRegistration(UUID id) {
-        individualService.hardDelete(id);
-        return ResponseEntity.ok().build();
-    }
+    private final UserService userService;
 
     @Override
     public ResponseEntity<Void> delete(UUID id) {
-        individualService.softDelete(id);
+        userService.delete(id);
         return ResponseEntity.ok().build();
     }
 
     @Override
     public ResponseEntity<IndividualPageDto> findAllByEmail(List<@Email String> email) {
-        var individuals = individualService.findByEmails(email);
-        return ResponseEntity.ok(individuals);
+        var users = userService.findByEmails(email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(users);
     }
 
     @Override
     public ResponseEntity<IndividualDto> findById(UUID id) {
-        var individual = individualService.findById(id);
-        return ResponseEntity.ok(individual);
+        var user = userService.findById(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     @Override
     public ResponseEntity<IndividualWriteResponseDto> registration(IndividualWriteDto individualWriteDto) {
-        var individual = individualService.register(individualWriteDto);
-        return ResponseEntity.ok(individual);
+        var user = userService.register(individualWriteDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     @Override
     public ResponseEntity<IndividualWriteResponseDto> update(UUID id, IndividualWriteDto individualWriteDto) {
-        return ResponseEntity.ok(individualService.update(id, individualWriteDto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.update(id, individualWriteDto));
     }
 }

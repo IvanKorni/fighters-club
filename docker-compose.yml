@@ -31,6 +31,73 @@ services:
       timeout: 5s
       retries: 20
 
+  game-postgres:
+    image: postgres:17
+    container_name: game-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: game
+    volumes:
+      - ./infrastructure/databases/game:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  stats-postgres:
+    image: postgres:17
+    container_name: stats-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stats
+    volumes:
+      - ./infrastructure/databases/stats:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  queue-postgres:
+    image: postgres:17
+    container_name: queue-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: queue
+    volumes:
+      - ./infrastructure/databases/queue:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server /etc/redis/redis.conf
+    volumes:
+      - ./infrastructure/redis/redis.conf:/etc/redis/redis.conf:ro
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
   person-postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: person-postgres-exporter
@@ -46,12 +113,45 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: keycloak-postgres-exporter
     depends_on:
-      person-postgres:
+      keycloak-postgres:
         condition: service_healthy
     environment:
       DATA_SOURCE_NAME: postgresql://keycloak:keycloak@keycloak-postgres:5432/keycloak?sslmode=disable
     ports:
       - "9189:9187"
+
+  game-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: game-postgres-exporter
+    depends_on:
+      game-postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:postgres@game-postgres:5432/game?sslmode=disable
+    ports:
+      - "9191:9187"
+
+  stats-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: stats-postgres-exporter
+    depends_on:
+      stats-postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:postgres@stats-postgres:5432/stats?sslmode=disable
+    ports:
+      - "9192:9187"
+
+  queue-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: queue-postgres-exporter
+    depends_on:
+      queue-postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:postgres@queue-postgres:5432/queue?sslmode=disable
+    ports:
+      - "9193:9187"
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
@@ -79,22 +179,6 @@ services:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:9000/health/ready || exit 1" ]
       interval: 10s
       timeout: 5s
-      retries: 30
-
-  nexus:
-    image: sonatype/nexus3:3.76.0
-    container_name: nexus
-    ports:
-      - "8081:8081"
-    environment:
-      NEXUS_SECURITY_INITIAL_PASSWORD: admin
-      NEXUS_SECURITY_RANDOMPASSWORD: false
-    volumes:
-      - nexus-data:/nexus-data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status" ]
-      interval: 5s
-      timeout: 10s
       retries: 30
 
   prometheus:
@@ -176,7 +260,6 @@ services:
     volumes:
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
       - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards
-      - nexus-data:/nexus-data
     healthcheck:
       test: [ "CMD", "wget", "--spider", "http://localhost:3000/api/health" ]
       interval: 10s
@@ -185,8 +268,8 @@ services:
 
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
     container_name: api
     environment:
       KEYCLOAK_URL: http://keycloak:8080
@@ -227,11 +310,84 @@ services:
       timeout: 5s
       retries: 30
 
+  game-api:
+    build:
+      context: ./game-service
+      dockerfile: Dockerfile
+    container_name: game-api
+    ports:
+      - "8094:8094"
+    working_dir: /app
+    environment:
+      POSTGRES_HOST: game-postgres
+      POSTGRES_PORT: 5432
+      SPRING_PROFILES_ACTIVE: docker
+      OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+    depends_on:
+      game-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8094/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  stats-api:
+    build:
+      context: ./stats-service
+      dockerfile: Dockerfile
+    container_name: stats-api
+    ports:
+      - "8095:8095"
+    working_dir: /app
+    environment:
+      POSTGRES_HOST: stats-postgres
+      POSTGRES_PORT: 5432
+      SPRING_PROFILES_ACTIVE: docker
+      OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+    depends_on:
+      stats-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8095/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  queue-api:
+    build:
+      context: ./queue-service
+      dockerfile: Dockerfile
+    container_name: queue-api
+    ports:
+      - "8093:8093"
+    working_dir: /app
+    environment:
+      POSTGRES_HOST: queue-postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SPRING_PROFILES_ACTIVE: docker
+      OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+      KEYCLOAK_URL: http://keycloak:8080
+    depends_on:
+      queue-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8093/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   artifacts:
   tempo_data:
-  nexus-data:
   loki_data:
   loki_chunks:
   loki_index:
   loki_rules:
+  redis_data:
