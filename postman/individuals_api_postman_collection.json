@@ -9,14 +9,7 @@
     { "key": "baseUrl", "value": "http://localhost:8091" },
     { "key": "email", "value": "user+{{timestamp}}@example.com" },
     { "key": "password", "value": "Qwerty_123" },
-    { "key": "firstName", "value": "John" },
-    { "key": "lastName", "value": "Doe" },
-    { "key": "passport_number", "value": "1234 567890" },
-    { "key": "phone_number", "value": "+1234567890" },
-    { "key": "address", "value": "Some street 1" },
-    { "key": "zip_code", "value": "10001" },
-    { "key": "city", "value": "NY" },
-    { "key": "country_code", "value": "USA" }
+    { "key": "nickname", "value": "john_doe_{{timestamp}}" }
   ],
   "item": [
     {
@@ -30,6 +23,9 @@
               "pm.collectionVariables.set('timestamp', String(ts));",
               "if (!pm.collectionVariables.get('email')) {",
               "  pm.collectionVariables.set('email', `user+${ts}@example.com`);",
+              "}",
+              "if (!pm.collectionVariables.get('nickname')) {",
+              "  pm.collectionVariables.set('nickname', `john_doe_${ts}`);",
               "}"
             ],
             "type": "text/javascript"
@@ -42,6 +38,7 @@
               "pm.test('Variables prepared', function () {",
               "  pm.expect(pm.collectionVariables.get('timestamp')).to.exist;",
               "  pm.expect(pm.collectionVariables.get('email')).to.include('@');",
+              "  pm.expect(pm.collectionVariables.get('nickname')).to.exist;",
               "});"
             ],
             "type": "text/javascript"
@@ -63,7 +60,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"confirm_password\": \"{{password}}\",\n  \"passport_number\": \"{{passport_number}}\",\n  \"phone_number\": \"{{phone_number}}\",\n  \"address\": {\n    \"address\": \"{{address}}\",\n    \"zip_code\": \"{{zip_code}}\",\n    \"city\": \"{{city}}\",\n    \"country_code\": \"{{country_code}}\"\n  }\n}"
+          "raw": "{\n  \"nickname\": \"{{nickname}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"confirm_password\": \"{{password}}\"\n}"
         },
         "url": "{{baseUrl}}/v1/auth/registration"
       },
