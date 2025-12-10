@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Repository for managing queue in Redis using Sorted Set.
- * Uses timestamp as score to maintain chronological order of players.
+ * Репозиторий для управления очередью в Redis с использованием Sorted Set.
+ * Использует timestamp в качестве score для поддержания хронологического порядка игроков.
  */
 @Slf4j
 @Repository
@@ -23,11 +23,11 @@ public class RedisQueueRepository {
     private final RedisTemplate<String, String> redisTemplate;
 
     /**
-     * Adds a user to the queue with current timestamp as score.
+     * Добавляет пользователя в очередь с текущим timestamp в качестве score.
      *
-     * @param userId the user ID to add
-     * @param timestamp the timestamp (score) in milliseconds
-     * @return true if the user was added, false if already exists
+     * @param userId идентификатор пользователя для добавления
+     * @param timestamp timestamp (score) в миллисекундах
+     * @return true если пользователь был добавлен, false если уже существует
      */
     public boolean addToQueue(UUID userId, long timestamp) {
         String userIdStr = userId.toString();
@@ -38,10 +38,10 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Removes a user from the queue.
+     * Удаляет пользователя из очереди.
      *
-     * @param userId the user ID to remove
-     * @return true if the user was removed, false if not found
+     * @param userId идентификатор пользователя для удаления
+     * @return true если пользователь был удален, false если не найден
      */
     public boolean removeFromQueue(UUID userId) {
         String userIdStr = userId.toString();
@@ -52,10 +52,10 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Checks if a user is in the queue.
+     * Проверяет, находится ли пользователь в очереди.
      *
-     * @param userId the user ID to check
-     * @return true if the user is in the queue, false otherwise
+     * @param userId идентификатор пользователя для проверки
+     * @return true если пользователь в очереди, false в противном случае
      */
     public boolean isInQueue(UUID userId) {
         String userIdStr = userId.toString();
@@ -66,10 +66,10 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets the timestamp (score) when the user joined the queue.
+     * Получает timestamp (score) когда пользователь присоединился к очереди.
      *
-     * @param userId the user ID
-     * @return the timestamp in milliseconds, or null if user is not in queue
+     * @param userId идентификатор пользователя
+     * @return timestamp в миллисекундах, или null если пользователь не в очереди
      */
     public Long getJoinTimestamp(UUID userId) {
         String userIdStr = userId.toString();
@@ -78,11 +78,11 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets the position (rank) of the user in the queue.
-     * Position is 0-based (0 = first in queue).
+     * Получает позицию (ранг) пользователя в очереди.
+     * Позиция начинается с 0 (0 = первый в очереди).
      *
-     * @param userId the user ID
-     * @return the position (rank), or null if user is not in queue
+     * @param userId идентификатор пользователя
+     * @return позиция (ранг), или null если пользователь не в очереди
      */
     public Long getPosition(UUID userId) {
         String userIdStr = userId.toString();
@@ -94,9 +94,9 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets the size of the queue.
+     * Получает размер очереди.
      *
-     * @return the number of users in the queue
+     * @return количество пользователей в очереди
      */
     public long getQueueSize() {
         Long size = redisTemplate.opsForZSet().zCard(QUEUE_KEY);
@@ -104,11 +104,11 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets the oldest N players from the queue (lowest scores = earliest timestamps).
-     * Useful for matchmaking to find players who have been waiting the longest.
+     * Получает N самых старых игроков из очереди (низшие score = самые ранние timestamp).
+     * Полезно для подбора соперников, чтобы найти игроков, которые ждут дольше всего.
      *
-     * @param count the number of players to retrieve
-     * @return set of user IDs (as strings) ordered by join time (oldest first)
+     * @param count количество игроков для получения
+     * @return множество идентификаторов пользователей (в виде строк), упорядоченных по времени присоединения (самые старые первыми)
      */
     public Set<String> getOldestPlayers(int count) {
         Set<String> players = redisTemplate.opsForZSet().range(QUEUE_KEY, 0, count - 1);
@@ -117,12 +117,12 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets players within a score range (timestamp range).
-     * Useful for finding players who joined within a specific time window.
+     * Получает игроков в диапазоне score (диапазон timestamp).
+     * Полезно для поиска игроков, которые присоединились в определенном временном окне.
      *
-     * @param minScore minimum timestamp (inclusive)
-     * @param maxScore maximum timestamp (inclusive)
-     * @return set of user IDs (as strings) within the score range
+     * @param minScore минимальный timestamp (включительно)
+     * @param maxScore максимальный timestamp (включительно)
+     * @return множество идентификаторов пользователей (в виде строк) в диапазоне score
      */
     public Set<String> getPlayersByScoreRange(long minScore, long maxScore) {
         Set<String> players = redisTemplate.opsForZSet().rangeByScore(QUEUE_KEY, minScore, maxScore);
@@ -132,10 +132,10 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Removes multiple users from the queue.
+     * Удаляет нескольких пользователей из очереди.
      *
-     * @param userIds set of user IDs to remove
-     * @return number of users removed
+     * @param userIds множество идентификаторов пользователей для удаления
+     * @return количество удаленных пользователей
      */
     public long removeMultipleFromQueue(Set<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -148,9 +148,9 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets all players in the queue.
+     * Получает всех игроков в очереди.
      *
-     * @return set of all user IDs (as strings) in the queue
+     * @return множество всех идентификаторов пользователей (в виде строк) в очереди
      */
     public Set<String> getAllPlayers() {
         Set<String> players = redisTemplate.opsForZSet().range(QUEUE_KEY, 0, -1);
@@ -158,11 +158,11 @@ public class RedisQueueRepository {
     }
 
     /**
-     * Gets players with their scores (timestamps).
+     * Получает игроков с их score (timestamp).
      *
-     * @param start start index (0-based)
-     * @param end end index (-1 for all)
-     * @return set of tuples containing user ID and score
+     * @param start начальный индекс (начиная с 0)
+     * @param end конечный индекс (-1 для всех)
+     * @return множество кортежей, содержащих идентификатор пользователя и score
      */
     public Set<ZSetOperations.TypedTuple<String>> getPlayersWithScores(long start, long end) {
         Set<ZSetOperations.TypedTuple<String>> players = redisTemplate.opsForZSet()
