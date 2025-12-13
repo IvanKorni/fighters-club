@@ -61,6 +61,7 @@ public abstract class LifecycleSpecification {
         r.add("auth.url", () -> kcBase);
         r.add("users.url", () -> kcBase);
         r.add("person.url", () -> wireMockBase);
+        r.add("application.telegram.botToken", () -> "test-bot-token-for-integration-tests");
     }
 
 
