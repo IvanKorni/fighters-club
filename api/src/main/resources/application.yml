@@ -12,6 +12,8 @@ application:
     adminUsername: admin
     adminPassword: admin
     adminClientId: admin-cli
+  telegram:
+    botToken: "${TELEGRAM_BOT_TOKEN:8353294626:AAGD0qbhUV2FzdCR2GIOv6CoIxv6xgUgb6g}"
 
 spring:
   application:

@@ -104,6 +104,8 @@ dependencies {
     implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
 
     implementation("io.netty:netty-resolver-dns-native-macos:${versions["nettyResolverVersion"]}")
+    
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 tasks.withType<Test> {
