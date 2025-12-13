@@ -66,3 +66,7 @@ otel:
     exporter: none
 logging:
   config: "classpath:logback.xml"
+
+game:
+  service:
+    url: ${GAME_SERVICE_URL:http://localhost:8094}

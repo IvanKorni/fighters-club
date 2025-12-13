@@ -1,0 +1,395 @@
+openapi: 3.0.0
+info:
+  title: Game API
+  description: REST API для управления боем и игровой механикой.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8094
+
+paths:
+  /v1/game/move:
+    post:
+      summary: Отправить ход
+      operationId: makeMove
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveRequest'
+      responses:
+        '202':
+          description: Ход принят к обработке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveResponse'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Матч не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/game/match:
+    post:
+      summary: Создать новый матч
+      operationId: createMatch
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMatchRequest'
+      responses:
+        '201':
+          description: Матч успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResponse'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/game/{matchId}:
+    get:
+      summary: Получить информацию о матче
+      operationId: getMatch
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Информация о матче
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResponse'
+        '401':
+          description: Не авторизован
+        '404':
+          description: Матч не найден
+
+  /v1/game/{matchId}/moves:
+    get:
+      summary: Получить историю ходов матча
+      operationId: getMatchMoves
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: turnNumber
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: Фильтр по номеру хода (если указан, возвращаются только ходы этого раунда)
+      responses:
+        '200':
+          description: История ходов матча
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovesResponse'
+        '401':
+          description: Не авторизован
+        '404':
+          description: Матч не найден
+
+  /v1/game/{matchId}/turn/{turnNumber}:
+    get:
+      summary: Получить информацию о конкретном ходе
+      operationId: getTurnInfo
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: turnNumber
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Информация о ходе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnResultResponse'
+        '401':
+          description: Не авторизован
+        '404':
+          description: Матч или ход не найден
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateMatchRequest:
+      type: object
+      required:
+        - player1Id
+        - player2Id
+      properties:
+        player1Id:
+          type: string
+          format: uuid
+        player2Id:
+          type: string
+          format: uuid
+
+    MoveRequest:
+      type: object
+      required:
+        - matchId
+        - attackTarget
+        - defenseTarget
+        - turnNumber
+      properties:
+        matchId:
+          type: string
+          format: uuid
+          description: ID матча
+        attackTarget:
+          type: string
+          enum: [HEAD, BODY, LEGS]
+          description: Цель атаки
+        defenseTarget:
+          type: string
+          enum: [HEAD, BODY, LEGS]
+          description: Цель защиты
+        turnNumber:
+          type: integer
+          minimum: 1
+          description: Номер хода
+
+    MoveResponse:
+      type: object
+      required: [ message, turnNumber ]
+      properties:
+        message:
+          type: string
+          example: "Move accepted"
+          description: Сообщение о принятии хода
+        turnNumber:
+          type: integer
+          description: Номер хода
+        matchId:
+          type: string
+          format: uuid
+          description: ID матча
+
+    MatchResponse:
+      type: object
+      required: [ id, player1Id, player2Id, status, player1HP, player2HP, turnNumber ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID матча
+        player1Id:
+          type: string
+          format: uuid
+          description: ID первого игрока
+        player2Id:
+          type: string
+          format: uuid
+          description: ID второго игрока
+        winnerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID победителя (если матч завершен)
+        status:
+          type: string
+          enum: [WAITING, IN_PROGRESS, FINISHED]
+          description: Статус матча
+        player1HP:
+          type: integer
+          minimum: 0
+          description: Здоровье первого игрока
+        player2HP:
+          type: integer
+          minimum: 0
+          description: Здоровье второго игрока
+        turnNumber:
+          type: integer
+          minimum: 1
+          description: Текущий номер хода
+        currentTurnStart:
+          type: string
+          format: date-time
+          description: Время начала текущего хода
+        turnCount:
+          type: integer
+          description: Общее количество ходов
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания матча
+        updated:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время завершения матча
+        duration:
+          type: integer
+          description: Длительность матча в секундах
+
+    MoveDto:
+      type: object
+      required: [ id, matchId, playerId, attackTarget, defenseTarget, turnNumber, created ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID хода
+        matchId:
+          type: string
+          format: uuid
+          description: ID матча
+        playerId:
+          type: string
+          format: uuid
+          description: ID игрока, сделавшего ход
+        attackTarget:
+          type: string
+          enum: [HEAD, BODY, LEGS]
+          description: Цель атаки
+        defenseTarget:
+          type: string
+          enum: [HEAD, BODY, LEGS]
+          description: Цель защиты
+        turnNumber:
+          type: integer
+          minimum: 1
+          description: Номер хода
+        damage:
+          type: integer
+          nullable: true
+          description: Нанесенный урон (если ход обработан)
+        created:
+          type: string
+          format: date-time
+          description: Время создания хода
+
+    MovesResponse:
+      type: object
+      required: [ items ]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MoveDto'
+          description: Список ходов
+
+    TurnResultResponse:
+      type: object
+      required: [ turnNumber, matchId ]
+      properties:
+        turnNumber:
+          type: integer
+          minimum: 1
+          description: Номер хода
+        matchId:
+          type: string
+          format: uuid
+          description: ID матча
+        player1Move:
+          $ref: '#/components/schemas/MoveDto'
+          nullable: true
+          description: Ход первого игрока
+        player2Move:
+          $ref: '#/components/schemas/MoveDto'
+          nullable: true
+          description: Ход второго игрока
+        player1Damage:
+          type: integer
+          description: Урон, нанесенный первым игроком
+        player2Damage:
+          type: integer
+          description: Урон, нанесенный вторым игроком
+        player1HPAfter:
+          type: integer
+          description: Здоровье первого игрока после хода
+        player2HPAfter:
+          type: integer
+          description: Здоровье второго игрока после хода
+        processedAt:
+          type: string
+          format: date-time
+          description: Время обработки хода
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+        status:
+          type: integer
+          description: HTTP статус код
+
+
