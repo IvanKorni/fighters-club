@@ -12,15 +12,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
+        // Включаем простой брокер сообщений для отправки сообщений клиентам
         config.enableSimpleBroker("/topic", "/queue");
+        // Префикс для сообщений от клиента к серверу
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Регистрируем endpoint для WebSocket соединений
         registry.addEndpoint("/ws/queue")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
-        // TODO: Implement WebSocket for match notifications
+                .setAllowedOriginPatterns("*") // В продакшене указать конкретные домены
+                .withSockJS(); // Поддержка SockJS для fallback
     }
 }
