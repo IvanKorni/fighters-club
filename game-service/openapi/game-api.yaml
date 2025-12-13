@@ -47,6 +47,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /v1/game/match:
+    post:
+      summary: Создать новый матч
+      operationId: createMatch
+      tags:
+        - Game
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMatchRequest'
+      responses:
+        '201':
+          description: Матч успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResponse'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/game/{matchId}:
     get:
       summary: Получить информацию о матче
@@ -149,6 +183,19 @@ components:
       bearerFormat: JWT
 
   schemas:
+    CreateMatchRequest:
+      type: object
+      required:
+        - player1Id
+        - player2Id
+      properties:
+        player1Id:
+          type: string
+          format: uuid
+        player2Id:
+          type: string
+          format: uuid
+
     MoveRequest:
       type: object
       required:
