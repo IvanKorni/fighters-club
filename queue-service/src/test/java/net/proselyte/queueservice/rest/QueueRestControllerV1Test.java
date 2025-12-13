@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -19,12 +20,14 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(QueueRestControllerV1.class)
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("QueueRestControllerV1 Unit Tests")
 class QueueRestControllerV1Test {
 
@@ -113,9 +116,16 @@ class QueueRestControllerV1Test {
         SecurityContextHolder.setContext(mockSecurityContext);
 
         // when & then
+        // Without authentication, controller throws ResponseStatusException with 401 UNAUTHORIZED
         mockMvc.perform(post("/v1/queue/join")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> {
+                    assertNotNull(result.getResolvedException(), 
+                            "Exception should be thrown when user is not authenticated");
+                    assertTrue(result.getResolvedException() instanceof org.springframework.web.server.ResponseStatusException,
+                            "Should throw ResponseStatusException when user is not authenticated");
+                });
 
         verify(queueService, never()).joinQueue(any());
     }

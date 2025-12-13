@@ -6,10 +6,12 @@ import net.proselyte.queue.dto.QueueJoinResponseDto;
 import net.proselyte.queue.dto.QueueLeaveResponseDto;
 import net.proselyte.queue.dto.QueueStatusResponseDto;
 import net.proselyte.queueservice.service.QueueService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -49,7 +51,7 @@ public class QueueRestControllerV1 implements QueueApi {
     private UUID getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("User is not authenticated");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not authenticated");
         }
         // TODO: Extract userId from JWT token
         String principal = authentication.getName();
