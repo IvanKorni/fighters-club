@@ -278,6 +278,9 @@ services:
       PERSONS_API_HOST: persons-api
       PERSONS_API_URL: http://persons-api:8092
       OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+      TELEGRAM_BOT_TOKEN: "8353294626:AAGD0qbhUV2FzdCR2GIOv6CoIxv6xgUgb6g"
+      # Проверка хеша Telegram включена (false или не указано = проверка активна)
+      # TELEGRAM_SKIP_HASH_VALIDATION: "false"
     ports:
       - "8091:8091"
     depends_on:

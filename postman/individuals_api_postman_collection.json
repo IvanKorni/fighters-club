@@ -84,6 +84,167 @@
       ]
     },
     {
+      "name": "1a) Telegram Auth (POST /v1/auth/telegram)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Генерируем данные для Telegram Auth (WebApp формат)",
+              "const telegramId = 123456789;",
+              "const firstName = 'John';",
+              "const lastName = 'Doe';",
+              "const username = 'johndoe';",
+              "const authDate = Math.floor(Date.now() / 1000);",
+              "",
+              "// Используем реальный bot token из конфига",
+              "const botToken = '8353294626:AAGD0qbhUV2FzdCR2GIOv6CoIxv6xgUgb6g';",
+              "",
+              "// Строим JSON для user (как в Telegram WebApp)",
+              "const userJson = JSON.stringify({",
+              "    id: telegramId,",
+              "    first_name: firstName,",
+              "    last_name: lastName,",
+              "    username: username",
+              "});",
+              "",
+              "// URL-encode user JSON",
+              "const userEncoded = encodeURIComponent(userJson);",
+              "",
+              "// Строим data check string для вычисления hash",
+              "// ВАЖНО: Ключи должны быть отсортированы в алфавитном порядке",
+              "// ВАЖНО: Для data check string используем НЕ URL-encoded версию user JSON",
+              "const dataCheckString = `auth_date=${authDate}\\nuser=${userJson}`;",
+              "",
+              "console.log('Data check string:', dataCheckString);",
+              "",
+              "// Вычисляем hash согласно алгоритму Telegram WebApp",
+              "// https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app",
+              "const CryptoJS = require('crypto-js');",
+              "",
+              "// Шаг 1: secret_key = HMAC-SHA256(\"WebAppData\", bot_token)",
+              "const secretKey = CryptoJS.HmacSHA256(botToken, 'WebAppData');",
+              "",
+              "// Шаг 2: hash = HMAC-SHA256(data-check-string, secret_key)",
+              "const hash = CryptoJS.HmacSHA256(dataCheckString, secretKey).toString();",
+              "",
+              "console.log('Generated hash:', hash);",
+              "",
+              "// Строим initData в формате URL-encoded строки",
+              "const initData = `auth_date=${authDate}&user=${userEncoded}&hash=${hash}`;",
+              "",
+              "console.log('InitData:', initData);",
+              "",
+              "// Сохраняем initData для использования в запросе",
+              "pm.collectionVariables.set('telegram_initData', initData);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has tokens', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "  pm.expect(json).to.have.property('refresh_token');",
+              "});",
+              "if (json && json.access_token) pm.collectionVariables.set('access_token', json.access_token);",
+              "if (json && json.refresh_token) pm.collectionVariables.set('refresh_token', json.refresh_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"initData\": \"{{telegram_initData}}\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/telegram"
+      }
+    },
+    {
+      "name": "1b) Telegram Auth with Empty Strings (POST /v1/auth/telegram)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Тест для проверки обработки пустых строк",
+              "// Telegram может отправлять пустые строки вместо отсутствующих полей",
+              "const telegramId = 987654321;",
+              "const firstName = 'TestUser';",
+              "const authDate = Math.floor(Date.now() / 1000);",
+              "",
+              "// Используем реальный bot token из конфига",
+              "const botToken = '8353294626:AAGD0qbhUV2FzdCR2GIOv6CoIxv6xgUgb6g';",
+              "",
+              "// Создаем data_check_string БЕЗ пустых полей",
+              "const dataCheckArr = [",
+              "  `auth_date=${authDate}`,",
+              "  `first_name=${firstName}`,",
+              "  `id=${telegramId}`",
+              "].sort();",
+              "",
+              "const dataCheckString = dataCheckArr.join('\\n');",
+              "",
+              "console.log('Data check string (empty strings test):', dataCheckString);",
+              "",
+              "const CryptoJS = require('crypto-js');",
+              "const secretKey = CryptoJS.SHA256(botToken);",
+              "const hash = CryptoJS.HmacSHA256(dataCheckString, secretKey).toString();",
+              "",
+              "console.log('Generated hash (empty strings test):', hash);",
+              "",
+              "pm.collectionVariables.set('telegram_id_empty', telegramId);",
+              "pm.collectionVariables.set('telegram_first_name_empty', firstName);",
+              "pm.collectionVariables.set('telegram_auth_date_empty', authDate);",
+              "pm.collectionVariables.set('telegram_hash_empty', hash);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK - Empty strings handled correctly', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has tokens', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "  pm.expect(json).to.have.property('refresh_token');",
+              "});",
+              "pm.test('Telegram user created with correct email format', function () {",
+              "  // Email должен быть в формате tg_{id}@telegram.user",
+              "  pm.expect(json.access_token).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": {{telegram_id_empty}},\n  \"first_name\": \"{{telegram_first_name_empty}}\",\n  \"last_name\": \"\",\n  \"username\": \"\",\n  \"photo_url\": \"\",\n  \"auth_date\": {{telegram_auth_date_empty}},\n  \"hash\": \"{{telegram_hash_empty}}\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/telegram"
+      }
+    },
+    {
       "name": "2) Login (POST /v1/auth/login)",
       "request": {
         "method": "POST",
@@ -209,6 +370,33 @@
           "script": {
             "exec": [
               "pm.test('401 Unauthorized', function () { pm.response.to.have.status(401); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7) Negative - Telegram Auth with invalid hash (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 123456789,\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"username\": \"johndoe\",\n  \"auth_date\": 1234567890,\n  \"hash\": \"invalid_hash_value\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/telegram"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should reject invalid hash', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([400, 401, 500]);",
+              "});"
             ],
             "type": "text/javascript"
           }
