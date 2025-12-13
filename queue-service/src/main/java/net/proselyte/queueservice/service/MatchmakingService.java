@@ -38,7 +38,7 @@ public class MatchmakingService {
         // Получаем двух самых старых игроков (которые ждут дольше всего)
         Set<String> oldestPlayers = redisQueueRepository.getOldestPlayers(2);
         
-        if (oldestPlayers.size() < 2) {
+        if (oldestPlayers == null || oldestPlayers.size() < 2) {
             log.debug("Could not get 2 players from queue");
             return false;
         }
