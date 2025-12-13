@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import net.proselyte.individual.dto.IndividualWriteDto;
+import net.proselyte.individual.dto.TelegramAuthRequest;
 import net.proselyte.individual.dto.TokenResponse;
 import net.proselyte.individual.dto.UserInfoResponse;
 import net.proselyte.individual.dto.UserLoginRequest;
@@ -35,6 +36,10 @@ public class IndividualApiTestService {
 
     public TokenResponse login(UserLoginRequest request) {
         return restTemplate.postForObject(baseUrl() + "/auth/login", request, TokenResponse.class);
+    }
+
+    public TokenResponse telegramAuth(TelegramAuthRequest request) {
+        return restTemplate.postForObject(baseUrl() + "/auth/telegram", request, TokenResponse.class);
     }
 
     public UserInfoResponse getMe(String accessToken) {

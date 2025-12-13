@@ -17,6 +17,15 @@
     {
       "request": {
         "method": "DELETE",
+        "urlPathPattern": "/v1/persons/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "request": {
+        "method": "DELETE",
         "urlPathPattern": "/v1/persons/compensate-registration/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
       },
       "response": {
