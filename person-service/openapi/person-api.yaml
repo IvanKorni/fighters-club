@@ -134,10 +134,14 @@ components:
     IndividualDto:
       type: object
       required: [
+        id,
         email,
         nickname,
       ]
       properties:
+        id:
+          type: string
+          format: uuid
         nickname:
           type: string
         email:

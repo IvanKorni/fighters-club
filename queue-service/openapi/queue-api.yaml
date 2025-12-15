@@ -101,7 +101,7 @@ components:
   schemas:
     QueueJoinResponseDto:
       type: object
-      required: [ message, status ]
+      required: [ message, status, personId ]
       properties:
         message:
           type: string
@@ -112,6 +112,10 @@ components:
           enum: [WAITING, MATCHED, LEFT]
           example: "WAITING"
           description: Статус в очереди
+        personId:
+          type: string
+          format: uuid
+          description: Person ID для подписки на WebSocket уведомления (используйте этот ID вместо Keycloak user ID)
         joinedAt:
           type: string
           format: date-time
