@@ -116,16 +116,30 @@ public class TelegramAuthValidator {
                     dataCheckString.append("\n");
                 }
                 String key = entry.getKey();
+                String rawValue = entry.getValue();
                 // URL-decode все значения (как делает Python's parse_qs)
-                String value = URLDecoder.decode(entry.getValue(), StandardCharsets.UTF_8);
+                // ВАЖНО: URLDecoder.decode может выбросить IllegalArgumentException если значение уже декодировано
+                // или содержит невалидные символы. В этом случае используем значение как есть.
+                String value;
+                try {
+                    value = URLDecoder.decode(rawValue, StandardCharsets.UTF_8);
+                } catch (IllegalArgumentException e) {
+                    // Если декодирование не удалось, используем значение как есть
+                    // Это может произойти если значение уже декодировано или содержит невалидные символы
+                    log.debug("Failed to URL-decode value for key '{}', using raw value: {}", key, e.getMessage());
+                    value = rawValue;
+                }
                 
                 dataCheckString.append(key).append("=").append(value);
                 first = false;
             }
             
+            String finalDataCheckString = dataCheckString.toString();
+            
             // Вычисляем hash
             // Важно: botToken не должен содержать пробельных символов (например, \n в конце)
-            String calculatedHash = calculateHash(dataCheckString.toString(), botToken.trim());
+            String trimmedBotToken = botToken.trim();
+            String calculatedHash = calculateHash(finalDataCheckString, trimmedBotToken);
             
             // Логируем информацию о валидации
             String tokenId = botToken != null && botToken.contains(":") 
@@ -142,6 +156,9 @@ public class TelegramAuthValidator {
             if (!hashMatches) {
                 log.warn("Telegram auth hash mismatch. Token ID: {} (len={}). Expected: {}, got: {}. Fields: {}", 
                     tokenId, botToken != null ? botToken.length() : 0, calculatedHash, hash, sortedParams.keySet());
+                log.warn("Data check string (length={}): {}", finalDataCheckString.length(), finalDataCheckString);
+                log.warn("Raw params (before URL-decode): {}", sortedParams);
+                log.warn("Bot token length: {}, trimmed length: {}", botToken != null ? botToken.length() : 0, trimmedBotToken.length());
                 
                 // Если включен режим отладки - пропускаем проверку хеша
                 if (SKIP_HASH_VALIDATION) {
@@ -216,10 +233,13 @@ public class TelegramAuthValidator {
         Map<String, String> params = new TreeMap<>();
         String[] pairs = initData.split("&");
         for (String pair : pairs) {
+            // Используем indexOf и substring для правильной обработки значений, содержащих "="
+            // ВАЖНО: split("=", 2) не работает, так как значение может содержать "="
             int idx = pair.indexOf("=");
             if (idx > 0) {
                 String key = pair.substring(0, idx);
                 String value = pair.substring(idx + 1);
+                // Если ключ уже есть, это может быть дубликат - используем последнее значение
                 params.put(key, value);
             }
         }

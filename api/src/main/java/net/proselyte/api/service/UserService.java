@@ -155,7 +155,19 @@ public class UserService {
                 .map(tokenResponseMapper::toTokenResponse)
                 .doOnNext(t -> log.info("Telegram user logged in successfully: {}", email))
                 .onErrorResume(loginError -> {
-                    // Если логин не удался, значит пользователя нет - регистрируем
+                    String errorMessage = loginError.getMessage() != null ? loginError.getMessage().toLowerCase() : "";
+                    
+                    // Проверяем, является ли ошибка проблемой конфигурации клиента
+                    if (errorMessage.contains("invalid_client") || 
+                        errorMessage.contains("invalid_client_credentials") ||
+                        errorMessage.contains("unauthorized_client")) {
+                        log.error("Keycloak client configuration error. Check KEYCLOAK_CLIENT_SECRET. Error: {}", 
+                                loginError.getMessage());
+                        return Mono.error(new ApiException(
+                                "Authentication service configuration error. Please contact support."));
+                    }
+                    
+                    // Если это ошибка неверных учетных данных пользователя - регистрируем нового
                     log.info("Telegram user not found, registering new user: {}", email);
                     
                     IndividualWriteDto individualWriteDto = new IndividualWriteDto();
@@ -166,8 +178,20 @@ public class UserService {
 
                     return register(individualWriteDto)
                             .doOnNext(t -> log.info("Telegram user registered successfully: {}", email))
-                            .doOnError(regError -> 
-                                log.error("Failed to register Telegram user: {}", email, regError));
+                            .onErrorResume(regError -> {
+                                // Если регистрация не удалась из-за дубликата - пользователь уже есть,
+                                // но по какой-то причине логин не работает
+                                String regErrorMsg = regError.getMessage() != null ? regError.getMessage().toLowerCase() : "";
+                                if (regErrorMsg.contains("duplicate") || regErrorMsg.contains("already exists") ||
+                                    regErrorMsg.contains("unique constraint")) {
+                                    log.warn("User {} already exists in database but login failed. " +
+                                            "Possible data inconsistency between Keycloak and Person DB.", email);
+                                    return Mono.error(new ApiException(
+                                            "User account exists but authentication failed. Please contact support."));
+                                }
+                                log.error("Failed to register Telegram user: {}", email, regError);
+                                return Mono.error(regError);
+                            });
                 });
     }
 
