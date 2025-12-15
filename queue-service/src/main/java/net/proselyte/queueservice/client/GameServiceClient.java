@@ -17,3 +17,5 @@ public interface GameServiceClient {
     MatchResponse createMatch(@RequestBody CreateMatchRequest request);
 }
 
+
+
