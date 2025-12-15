@@ -166,6 +166,17 @@ class MatchmakingServiceTest {
         // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
+
+        IndividualDto player1Dto = new IndividualDto();
+        player1Dto.setNickname(player1Nickname);
+        player1Dto.setEmail("player1@test.com");
+
+        IndividualDto player2Dto = new IndividualDto();
+        player2Dto.setNickname(player2Nickname);
+        player2Dto.setEmail("player2@test.com");
+
+        when(personServiceClient.getPersonById(player1Id)).thenReturn(player1Dto);
+        when(personServiceClient.getPersonById(player2Id)).thenReturn(player2Dto);
         when(gameServiceClient.createMatch(any(CreateMatchRequest.class)))
                 .thenThrow(new RuntimeException("Game service unavailable"));
 
@@ -174,23 +185,21 @@ class MatchmakingServiceTest {
 
         // then
         assertFalse(result);
+        verify(personServiceClient, times(1)).getPersonById(player1Id);
+        verify(personServiceClient, times(1)).getPersonById(player2Id);
         verify(gameServiceClient, times(1)).createMatch(any(CreateMatchRequest.class));
-        verify(personServiceClient, never()).getPersonById(any());
         verify(redisQueueRepository, never()).removeMultipleFromQueue(any());
         verify(notificationService, never()).notifyBothPlayers(any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should return false and keep players in queue when getting player1 nickname fails")
-    void shouldReturnFalseAndKeepPlayersInQueueWhenGettingPlayer1NicknameFails() {
+    @DisplayName("Should return false and remove player1 from queue when player1 not found")
+    void shouldReturnFalseAndRemovePlayer1FromQueueWhenPlayer1NotFound() {
         // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
+        when(redisQueueRepository.removeFromQueue(player1Id)).thenReturn(true);
 
-        MatchResponse matchResponse = new MatchResponse();
-        matchResponse.setId(matchId);
-
-        when(gameServiceClient.createMatch(any(CreateMatchRequest.class))).thenReturn(matchResponse);
         when(personServiceClient.getPersonById(player1Id))
                 .thenThrow(new RuntimeException("Person service unavailable"));
 
@@ -199,28 +208,26 @@ class MatchmakingServiceTest {
 
         // then
         assertFalse(result);
-        verify(gameServiceClient, times(1)).createMatch(any(CreateMatchRequest.class));
         verify(personServiceClient, times(1)).getPersonById(player1Id);
         verify(personServiceClient, never()).getPersonById(player2Id);
+        verify(gameServiceClient, never()).createMatch(any(CreateMatchRequest.class));
+        verify(redisQueueRepository, times(1)).removeFromQueue(player1Id);
         verify(redisQueueRepository, never()).removeMultipleFromQueue(any());
         verify(notificationService, never()).notifyBothPlayers(any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should return false and keep players in queue when getting player2 nickname fails")
-    void shouldReturnFalseAndKeepPlayersInQueueWhenGettingPlayer2NicknameFails() {
+    @DisplayName("Should return false and remove player2 from queue when player2 not found")
+    void shouldReturnFalseAndRemovePlayer2FromQueueWhenPlayer2NotFound() {
         // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
-
-        MatchResponse matchResponse = new MatchResponse();
-        matchResponse.setId(matchId);
+        when(redisQueueRepository.removeFromQueue(player2Id)).thenReturn(true);
 
         IndividualDto player1Dto = new IndividualDto();
         player1Dto.setNickname(player1Nickname);
         player1Dto.setEmail("player1@test.com");
 
-        when(gameServiceClient.createMatch(any(CreateMatchRequest.class))).thenReturn(matchResponse);
         when(personServiceClient.getPersonById(player1Id)).thenReturn(player1Dto);
         when(personServiceClient.getPersonById(player2Id))
                 .thenThrow(new RuntimeException("Person service unavailable"));
@@ -230,9 +237,10 @@ class MatchmakingServiceTest {
 
         // then
         assertFalse(result);
-        verify(gameServiceClient, times(1)).createMatch(any(CreateMatchRequest.class));
         verify(personServiceClient, times(1)).getPersonById(player1Id);
         verify(personServiceClient, times(1)).getPersonById(player2Id);
+        verify(gameServiceClient, never()).createMatch(any(CreateMatchRequest.class));
+        verify(redisQueueRepository, times(1)).removeFromQueue(player2Id);
         verify(redisQueueRepository, never()).removeMultipleFromQueue(any());
         verify(notificationService, never()).notifyBothPlayers(any(), any(), any(), any(), any());
     }
