@@ -10,8 +10,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -21,6 +26,7 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchangeSpec -> exchangeSpec
                         //PUBLIC
                         .pathMatchers(
@@ -52,6 +58,25 @@ public class SecurityConfig {
 
     private Converter<Jwt, Flux<GrantedAuthority>> jwtGrantedAuthoritiesConverter() {
         return new KeycloakJwtAuthenticationConverter();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Используем паттерны для поддержки Cloudflare туннелей и локальной разработки
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "https://*.trycloudflare.com",
+                "https://*.cloudflare.com"
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
 
