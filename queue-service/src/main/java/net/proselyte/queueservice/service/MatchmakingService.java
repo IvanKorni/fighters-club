@@ -50,17 +50,36 @@ public class MatchmakingService {
         log.info("Attempting to match players: {} and {}", player1Id, player2Id);
         
         try {
-            // Создаем матч через game-service
+            // ВАЖНО: Сначала проверяем, что оба игрока существуют в persons-api
+            // Это предотвращает создание матчей с несуществующими игроками
+            IndividualDto player1;
+            IndividualDto player2;
+            
+            try {
+                player1 = personServiceClient.getPersonById(player1Id);
+            } catch (Exception e) {
+                log.warn("Player {} not found in persons-api, removing from queue: {}", 
+                        player1Id, e.getMessage());
+                redisQueueRepository.removeFromQueue(player1Id);
+                return false;
+            }
+            
+            try {
+                player2 = personServiceClient.getPersonById(player2Id);
+            } catch (Exception e) {
+                log.warn("Player {} not found in persons-api, removing from queue: {}", 
+                        player2Id, e.getMessage());
+                redisQueueRepository.removeFromQueue(player2Id);
+                return false;
+            }
+            
+            // Теперь создаем матч через game-service (оба игрока существуют)
             CreateMatchRequest request = new CreateMatchRequest();
             request.setPlayer1Id(player1Id);
             request.setPlayer2Id(player2Id);
             
             MatchResponse match = gameServiceClient.createMatch(request);
             log.info("Match created: {}", match.getId());
-            
-            // Получаем никнеймы игроков
-            IndividualDto player1 = personServiceClient.getPersonById(player1Id);
-            IndividualDto player2 = personServiceClient.getPersonById(player2Id);
             
             // Удаляем игроков из очереди
             redisQueueRepository.removeMultipleFromQueue(oldestPlayers);
