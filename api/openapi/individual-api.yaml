@@ -88,6 +88,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /v1/auth/telegram:
+    post:
+      summary: Аутентификация через Telegram
+      operationId: telegramAuth
+      tags: [ Auth ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramAuthRequest'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Неверные данные Telegram
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/auth/me:
     get:
       summary: Получение данных текущего пользователя
@@ -123,6 +154,14 @@ components:
 
   schemas:
     # --- Auth DTOs ---
+    TelegramAuthRequest:
+      type: object
+      required: [ initData ]
+      properties:
+        initData:
+          type: string
+          description: Исходный initData от Telegram WebApp в формате URL-encoded строки (например, "auth_date=1765396015&user=%7B%22id%22%3A564568468%2C%22first_name%22%3A%22Ivan%22%7D&hash=...")
+
     UserLoginRequest:
       type: object
       required: [ email, password ]
@@ -162,6 +201,8 @@ components:
         email:
           type: string
           format: email
+        nickname:
+          type: string
         roles:
           type: array
           items:

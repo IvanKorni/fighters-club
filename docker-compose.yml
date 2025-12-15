@@ -176,10 +176,11 @@ services:
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://localhost:9000/health/ready || exit 1" ]
+      test: [ "CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/localhost/9000 && echo -e \"GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && cat <&3 | grep -q \"200 OK\" || exit 1'" ]
       interval: 10s
       timeout: 5s
       retries: 30
+      start_period: 30s
 
   prometheus:
     image: prom/prometheus:latest
@@ -273,10 +274,15 @@ services:
     container_name: api
     environment:
       KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_CLIENT_SECRET: FaxzBgk7pkyattBrV8MlVCVg80jjZKo5
+      KEYCLOAK_ADMIN_PASSWORD: admin
       SPRING_PROFILES_ACTIVE: docker
       PERSONS_API_HOST: persons-api
       PERSONS_API_URL: http://persons-api:8092
       OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      # Проверка хеша Telegram включена (false или не указано = проверка активна)
+      # TELEGRAM_SKIP_HASH_VALIDATION: "false"
     ports:
       - "8091:8091"
     depends_on:
@@ -370,12 +376,18 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       OTLP_EXPORTER_ENDPOINT: http://tempo:4318
       KEYCLOAK_URL: http://keycloak:8080
+      GAME_SERVICE_URL: http://game-api:8094
+      PERSON_SERVICE_URL: http://persons-api:8092
     depends_on:
       queue-postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+      game-api:
+        condition: service_healthy
+      persons-api:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:8093/actuator/health || exit 1" ]

@@ -8,10 +8,12 @@ application:
     tokenUrl: ${application.keycloak.realmUrl}/protocol/openid-connect/token
     realm: individual
     clientId: individual
-    clientSecret: FaxzBgk7pkyattBrV8MlVCVg80jjZKo5
+    clientSecret: ${KEYCLOAK_CLIENT_SECRET}
     adminUsername: admin
-    adminPassword: admin
+    adminPassword: ${KEYCLOAK_ADMIN_PASSWORD}
     adminClientId: admin-cli
+  telegram:
+    botToken: "${TELEGRAM_BOT_TOKEN}"
 
 spring:
   application:

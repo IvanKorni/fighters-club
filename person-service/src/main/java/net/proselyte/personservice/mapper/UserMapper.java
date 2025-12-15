@@ -28,10 +28,12 @@ public abstract class UserMapper {
 
     protected DateTimeUtil dateTimeUtil;
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "created", expression = "java(dateTimeUtil.now())")
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
     public abstract User to(IndividualWriteDto dto);
 
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "nickname", source = "nickname")
     @Mapping(target = "email", source = "email")
     public abstract IndividualDto from(User user);

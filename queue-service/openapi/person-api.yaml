@@ -1,0 +1,159 @@
+openapi: 3.0.0
+info:
+  title: Persons API
+  description: REST API для взаимодействия с Person сервисом.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8092
+
+paths:
+  /v1/persons:
+    post:
+      summary: Регистрация пользователя
+      operationId: "registration"
+      tags:
+        - Person
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualWriteDto'
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualWriteResponseDto'
+    get:
+      summary: Get persons
+      operationId: "findAllByEmail"
+      tags:
+        - Person
+      parameters:
+        - in: query
+          name: email
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: email
+      responses:
+        '201':
+          description: Successfully found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualPageDto'
+
+  /v1/persons/{id}:
+    get:
+      summary: Get person by id
+      operationId: "findById"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+          '201':
+            description: Successfully found
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/IndividualDto'
+    put:
+      summary: Update individual
+      operationId: "update"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualWriteDto'
+      responses:
+        '201':
+          description: Successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualWriteResponseDto'
+    delete:
+      summary: Delete person by id
+      operationId: "delete"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully deleted
+
+components:
+  schemas:
+    IndividualWriteResponseDto:
+      type: object
+      required: [ id ]
+      properties:
+        id:
+          type: string
+
+    IndividualWriteDto:
+      type: object
+      required: [
+        email,
+        nickname
+      ]
+      properties:
+        email:
+          type: string
+          format: email
+        nickname:
+          type: string
+
+    IndividualDto:
+      type: object
+      required: [
+        id,
+        email,
+        nickname,
+      ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+        email:
+          type: string
+          format: email
+
+    IndividualPageDto:
+      type: object
+      required: [ ]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndividualDto'
+
