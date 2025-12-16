@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.proselyte.gameservice.dto.CreateMatchRequest;
 import net.proselyte.gameservice.dto.MatchResponse;
 import net.proselyte.gameservice.entity.Match;
+import net.proselyte.gameservice.exception.MatchNotFoundException;
 import net.proselyte.gameservice.repository.MatchRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -17,6 +19,16 @@ import java.time.Instant;
 public class MatchService {
     
     private final MatchRepository matchRepository;
+    
+    @Transactional(readOnly = true)
+    public MatchResponse getMatch(UUID matchId) {
+        log.info("Getting match by id: {}", matchId);
+        
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new MatchNotFoundException("Match not found: " + matchId));
+        
+        return toMatchResponse(match);
+    }
     
     @Transactional
     public MatchResponse createMatch(CreateMatchRequest request) {

@@ -1,6 +1,9 @@
 package net.proselyte.queueservice.rest;
 
+import net.proselyte.person.dto.IndividualDto;
+import net.proselyte.person.dto.IndividualPageDto;
 import net.proselyte.queue.dto.QueueStatusResponseDto;
+import net.proselyte.queueservice.client.PersonServiceClient;
 import net.proselyte.queueservice.service.QueueService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,16 +15,20 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -37,32 +44,49 @@ class QueueRestControllerV1Test {
     @MockitoBean
     private QueueService queueService;
 
+    @MockitoBean
+    private PersonServiceClient personServiceClient;
+
     private UUID testUserId;
+    private String testEmail;
     private Authentication mockAuthentication;
     private SecurityContext mockSecurityContext;
+    private Jwt mockJwt;
+    private IndividualPageDto mockPersonPage;
 
     @BeforeEach
     void setUp() {
         testUserId = UUID.randomUUID();
+        testEmail = "test@example.com";
+        
+        // Setup JWT mock
+        mockJwt = mock(Jwt.class);
+        when(mockJwt.getClaimAsString("email")).thenReturn(testEmail);
         
         // Setup SecurityContext mock
         mockAuthentication = mock(Authentication.class);
         mockSecurityContext = mock(SecurityContext.class);
         
         when(mockAuthentication.isAuthenticated()).thenReturn(true);
-        when(mockAuthentication.getName()).thenReturn(testUserId.toString());
+        when(mockAuthentication.getPrincipal()).thenReturn(mockJwt);
         when(mockSecurityContext.getAuthentication()).thenReturn(mockAuthentication);
         
         SecurityContextHolder.setContext(mockSecurityContext);
+        
+        // Setup PersonServiceClient mock - default response
+        mockPersonPage = new IndividualPageDto();
+        IndividualDto personDto = new IndividualDto();
+        personDto.setId(testUserId);
+        personDto.setEmail(testEmail);
+        mockPersonPage.setItems(Collections.singletonList(personDto));
+        when(personServiceClient.findByEmail(anyList())).thenReturn(mockPersonPage);
     }
 
     @Test
     @DisplayName("Should successfully join queue and return waiting message")
     void shouldJoinQueueSuccessfully() throws Exception {
-        // given
         doNothing().when(queueService).joinQueue(testUserId);
 
-        // when & then
         mockMvc.perform(post("/v1/queue/join")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -74,10 +98,8 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should successfully leave queue and return left message")
     void shouldLeaveQueueSuccessfully() throws Exception {
-        // given
         doNothing().when(queueService).leaveQueue(testUserId);
 
-        // when & then
         mockMvc.perform(post("/v1/queue/leave")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -89,7 +111,6 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should return queue status successfully")
     void shouldReturnQueueStatusSuccessfully() throws Exception {
-        // given
         QueueStatusResponseDto statusResponse = new QueueStatusResponseDto();
         statusResponse.setStatus(QueueStatusResponseDto.StatusEnum.WAITING);
         statusResponse.setJoinedAt(OffsetDateTime.ofInstant(Instant.now().minusSeconds(30), ZoneOffset.UTC));
@@ -97,7 +118,6 @@ class QueueRestControllerV1Test {
 
         when(queueService.getQueueStatus(testUserId)).thenReturn(statusResponse);
 
-        // when & then
         mockMvc.perform(get("/v1/queue/status")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -111,17 +131,15 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should handle unauthenticated user")
     void shouldHandleUnauthenticatedUser() throws Exception {
-        // given
         when(mockSecurityContext.getAuthentication()).thenReturn(null);
         SecurityContextHolder.setContext(mockSecurityContext);
 
-        // when & then
         // Without authentication, controller throws ResponseStatusException with 401 UNAUTHORIZED
         mockMvc.perform(post("/v1/queue/join")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(result -> {
-                    assertNotNull(result.getResolvedException(), 
+                    assertNotNull(result.getResolvedException(),
                             "Exception should be thrown when user is not authenticated");
                     assertTrue(result.getResolvedException() instanceof org.springframework.web.server.ResponseStatusException,
                             "Should throw ResponseStatusException when user is not authenticated");
@@ -133,15 +151,19 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should handle authentication with non-UUID principal")
     void shouldHandleNonUuidPrincipal() throws Exception {
-        // given
+        String nonStandardEmail = "testuser@example.com";
         UUID generatedUserId = UUID.nameUUIDFromBytes("testuser".getBytes());
-        when(mockAuthentication.getName()).thenReturn("testuser");
-        when(mockSecurityContext.getAuthentication()).thenReturn(mockAuthentication);
-        SecurityContextHolder.setContext(mockSecurityContext);
+        when(mockJwt.getClaimAsString("email")).thenReturn(nonStandardEmail);
+
+        IndividualPageDto personPage = new IndividualPageDto();
+        IndividualDto personDto = new IndividualDto();
+        personDto.setId(generatedUserId);
+        personDto.setEmail(nonStandardEmail);
+        personPage.setItems(Collections.singletonList(personDto));
+        when(personServiceClient.findByEmail(anyList())).thenReturn(personPage);
 
         doNothing().when(queueService).joinQueue(generatedUserId);
 
-        // when & then
         mockMvc.perform(post("/v1/queue/join")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -153,15 +175,19 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should extract UUID from principal correctly")
     void shouldExtractUuidFromPrincipal() throws Exception {
-        // given
         UUID specificUserId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        when(mockAuthentication.getName()).thenReturn(specificUserId.toString());
-        when(mockSecurityContext.getAuthentication()).thenReturn(mockAuthentication);
-        SecurityContextHolder.setContext(mockSecurityContext);
+        String specificEmail = "specific@example.com";
+        when(mockJwt.getClaimAsString("email")).thenReturn(specificEmail);
+
+        IndividualPageDto personPage = new IndividualPageDto();
+        IndividualDto personDto = new IndividualDto();
+        personDto.setId(specificUserId);
+        personDto.setEmail(specificEmail);
+        personPage.setItems(Collections.singletonList(personDto));
+        when(personServiceClient.findByEmail(anyList())).thenReturn(personPage);
 
         doNothing().when(queueService).joinQueue(specificUserId);
 
-        // when & then
         mockMvc.perform(post("/v1/queue/join")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -172,12 +198,10 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should handle service exception when getting queue status")
     void shouldHandleServiceExceptionWhenGettingQueueStatus() throws Exception {
-        // given
         when(queueService.getQueueStatus(testUserId))
                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "User not found in queue"));
 
-        // when & then
         mockMvc.perform(get("/v1/queue/status")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
@@ -188,26 +212,50 @@ class QueueRestControllerV1Test {
     @Test
     @DisplayName("Should call service methods with correct user ID for all endpoints")
     void shouldCallServiceMethodsWithCorrectUserId() throws Exception {
-        // given
         UUID user1 = UUID.randomUUID();
         UUID user2 = UUID.randomUUID();
         UUID user3 = UUID.randomUUID();
+        String email1 = "user1@example.com";
+        String email2 = "user2@example.com";
+        String email3 = "user3@example.com";
 
-        when(mockAuthentication.getName())
-                .thenReturn(user1.toString())
-                .thenReturn(user2.toString())
-                .thenReturn(user3.toString());
+        when(mockJwt.getClaimAsString("email"))
+                .thenReturn(email1)
+                .thenReturn(email2)
+                .thenReturn(email3);
+
+        IndividualPageDto page1 = new IndividualPageDto();
+        IndividualDto dto1 = new IndividualDto();
+        dto1.setId(user1);
+        dto1.setEmail(email1);
+        page1.setItems(Collections.singletonList(dto1));
+
+        IndividualPageDto page2 = new IndividualPageDto();
+        IndividualDto dto2 = new IndividualDto();
+        dto2.setId(user2);
+        dto2.setEmail(email2);
+        page2.setItems(Collections.singletonList(dto2));
+
+        IndividualPageDto page3 = new IndividualPageDto();
+        IndividualDto dto3 = new IndividualDto();
+        dto3.setId(user3);
+        dto3.setEmail(email3);
+        page3.setItems(Collections.singletonList(dto3));
+
+        when(personServiceClient.findByEmail(anyList()))
+                .thenReturn(page1)
+                .thenReturn(page2)
+                .thenReturn(page3);
 
         doNothing().when(queueService).joinQueue(any());
         doNothing().when(queueService).leaveQueue(any());
-        
+
         QueueStatusResponseDto statusResponse = new QueueStatusResponseDto();
         statusResponse.setStatus(QueueStatusResponseDto.StatusEnum.WAITING);
         statusResponse.setJoinedAt(OffsetDateTime.now(ZoneOffset.UTC));
         statusResponse.setWaitingTime(0);
         when(queueService.getQueueStatus(any())).thenReturn(statusResponse);
 
-        // when & then
         mockMvc.perform(post("/v1/queue/join"))
                 .andExpect(status().isOk());
         verify(queueService, times(1)).joinQueue(user1);
