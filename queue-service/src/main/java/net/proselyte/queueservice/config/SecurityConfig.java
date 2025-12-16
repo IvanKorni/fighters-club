@@ -37,7 +37,8 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/swagger-ui/**"
+                                "/swagger-ui/**",
+                                "/ws/**"  // WebSocket endpoints - аутентификация через STOMP
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
