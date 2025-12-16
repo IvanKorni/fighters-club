@@ -62,7 +62,6 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should successfully match players and create match when queue has 2+ players")
     void shouldSuccessfullyMatchPlayersWhenQueueHasEnoughPlayers() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
 
@@ -82,10 +81,8 @@ class MatchmakingServiceTest {
         when(personServiceClient.getPersonById(player2Id)).thenReturn(player2Dto);
         when(redisQueueRepository.removeMultipleFromQueue(oldestPlayers)).thenReturn(2L);
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertTrue(result);
 
         ArgumentCaptor<CreateMatchRequest> requestCaptor = ArgumentCaptor.forClass(CreateMatchRequest.class);
@@ -115,13 +112,10 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should return false when queue has less than 2 players")
     void shouldReturnFalseWhenQueueHasLessThanTwoPlayers() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(1L);
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(redisQueueRepository, times(1)).getQueueSize();
         verify(redisQueueRepository, never()).getOldestPlayers(anyInt());
@@ -133,13 +127,10 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should return false when queue is empty")
     void shouldReturnFalseWhenQueueIsEmpty() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(0L);
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(redisQueueRepository, times(1)).getQueueSize();
         verify(redisQueueRepository, never()).getOldestPlayers(anyInt());
@@ -149,14 +140,11 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should return false when cannot get 2 players from queue")
     void shouldReturnFalseWhenCannotGetTwoPlayersFromQueue() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(Set.of(player1Id.toString()));
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(redisQueueRepository, times(1)).getQueueSize();
         verify(redisQueueRepository, times(1)).getOldestPlayers(2);
@@ -167,7 +155,6 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should return false and keep players in queue when match creation fails")
     void shouldReturnFalseAndKeepPlayersInQueueWhenMatchCreationFails() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
 
@@ -184,10 +171,8 @@ class MatchmakingServiceTest {
         when(gameServiceClient.createMatch(any(CreateMatchRequest.class)))
                 .thenThrow(new RuntimeException("Game service unavailable"));
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(personServiceClient, times(1)).getPersonById(player1Id);
         verify(personServiceClient, times(1)).getPersonById(player2Id);
@@ -199,7 +184,6 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should return false and remove player1 from queue when player1 not found")
     void shouldReturnFalseAndRemovePlayer1FromQueueWhenPlayer1NotFound() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
         when(redisQueueRepository.removeFromQueue(any(UUID.class))).thenReturn(true);
@@ -207,14 +191,13 @@ class MatchmakingServiceTest {
         // Make player1Id fail when looked up
         when(personServiceClient.getPersonById(player1Id))
                 .thenThrow(new RuntimeException("Person service unavailable"));
-        // Make player2Id succeed (but it won't be called if player1Id is processed first)
-        when(personServiceClient.getPersonById(player2Id))
+        // Stub player2Id with lenient to avoid unnecessary stubbing exception
+        // (it won't be called if player1Id is processed first and fails)
+        lenient().when(personServiceClient.getPersonById(player2Id))
                 .thenReturn(new IndividualDto());
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         // Verify that getPersonById was called at least once (for the first player processed)
         verify(personServiceClient, atLeastOnce()).getPersonById(any(UUID.class));
@@ -232,7 +215,6 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should return false and remove player2 from queue when player2 not found")
     void shouldReturnFalseAndRemovePlayer2FromQueueWhenPlayer2NotFound() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
         when(redisQueueRepository.removeFromQueue(any(UUID.class))).thenReturn(true);
@@ -245,10 +227,8 @@ class MatchmakingServiceTest {
         when(personServiceClient.getPersonById(player2Id))
                 .thenThrow(new RuntimeException("Person service unavailable"));
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(personServiceClient, times(1)).getPersonById(player1Id);
         verify(personServiceClient, times(1)).getPersonById(player2Id);
@@ -266,7 +246,6 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should successfully match players when queue has more than 2 players")
     void shouldSuccessfullyMatchPlayersWhenQueueHasMoreThanTwoPlayers() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(5L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(oldestPlayers);
 
@@ -286,10 +265,8 @@ class MatchmakingServiceTest {
         when(personServiceClient.getPersonById(player2Id)).thenReturn(player2Dto);
         when(redisQueueRepository.removeMultipleFromQueue(oldestPlayers)).thenReturn(2L);
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertTrue(result);
         verify(redisQueueRepository, times(1)).getQueueSize();
         verify(redisQueueRepository, times(1)).getOldestPlayers(2);
@@ -333,10 +310,8 @@ class MatchmakingServiceTest {
         when(personServiceClient.getPersonById(player4Id)).thenReturn(player4Dto);
         when(redisQueueRepository.removeMultipleFromQueue(players)).thenReturn(2L);
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertTrue(result);
 
         ArgumentCaptor<CreateMatchRequest> requestCaptor = ArgumentCaptor.forClass(CreateMatchRequest.class);
@@ -353,14 +328,11 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should handle empty set from getOldestPlayers")
     void shouldHandleEmptySetFromGetOldestPlayers() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(Set.of());
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(redisQueueRepository, times(1)).getQueueSize();
         verify(redisQueueRepository, times(1)).getOldestPlayers(2);
@@ -370,14 +342,11 @@ class MatchmakingServiceTest {
     @Test
     @DisplayName("Should handle null set from getOldestPlayers")
     void shouldHandleNullSetFromGetOldestPlayers() {
-        // given
         when(redisQueueRepository.getQueueSize()).thenReturn(2L);
         when(redisQueueRepository.getOldestPlayers(2)).thenReturn(null);
 
-        // when
         boolean result = matchmakingService.tryMatchPlayers();
 
-        // then
         assertFalse(result);
         verify(redisQueueRepository, times(1)).getQueueSize();
         verify(redisQueueRepository, times(1)).getOldestPlayers(2);
