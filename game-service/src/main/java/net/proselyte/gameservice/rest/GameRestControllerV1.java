@@ -11,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -28,6 +29,14 @@ public class GameRestControllerV1 {
         
         MatchResponse response = matchService.createMatch(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    @GetMapping("/{matchId}")
+    public ResponseEntity<MatchResponse> getMatch(@PathVariable UUID matchId) {
+        log.info("Received request to get match: {}", matchId);
+        
+        MatchResponse response = matchService.getMatch(matchId);
+        return ResponseEntity.ok(response);
     }
 }
 
