@@ -183,6 +183,10 @@ components:
       bearerFormat: JWT
 
   schemas:
+    Target:
+      type: string
+      enum: [HEAD, BODY, LEGS]
+      description: Цель атаки или защиты
     CreateMatchRequest:
       type: object
       required:
@@ -209,13 +213,9 @@ components:
           format: uuid
           description: ID матча
         attackTarget:
-          type: string
-          enum: [HEAD, BODY, LEGS]
-          description: Цель атаки
+          $ref: '#/components/schemas/Target'
         defenseTarget:
-          type: string
-          enum: [HEAD, BODY, LEGS]
-          description: Цель защиты
+          $ref: '#/components/schemas/Target'
         turnNumber:
           type: integer
           minimum: 1
@@ -315,13 +315,9 @@ components:
           format: uuid
           description: ID игрока, сделавшего ход
         attackTarget:
-          type: string
-          enum: [HEAD, BODY, LEGS]
-          description: Цель атаки
+          $ref: '#/components/schemas/Target'
         defenseTarget:
-          type: string
-          enum: [HEAD, BODY, LEGS]
-          description: Цель защиты
+          $ref: '#/components/schemas/Target'
         turnNumber:
           type: integer
           minimum: 1
