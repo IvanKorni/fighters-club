@@ -2,12 +2,14 @@ package net.proselyte.queueservice.repository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Repository;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 
 /**
  * Репозиторий для управления очередью в Redis с использованием Sorted Set.
@@ -30,11 +32,16 @@ public class RedisQueueRepository {
      * @return true если пользователь был добавлен, false если уже существует
      */
     public boolean addToQueue(UUID userId, long timestamp) {
-        String userIdStr = userId.toString();
-        Boolean added = redisTemplate.opsForZSet().add(QUEUE_KEY, userIdStr, timestamp);
-        boolean result = Boolean.TRUE.equals(added);
-        log.debug("User {} {} to queue with timestamp {}", userId, result ? "added" : "already exists", timestamp);
-        return result;
+        try {
+            String userIdStr = userId.toString();
+            Boolean added = redisTemplate.opsForZSet().add(QUEUE_KEY, userIdStr, timestamp);
+            boolean result = Boolean.TRUE.equals(added);
+            log.debug("User {} {} to queue with timestamp {}", userId, result ? "added" : "already exists", timestamp);
+            return result;
+        } catch (DataAccessException | CancellationException e) {
+            log.warn("Failed to add user {} to queue (likely during shutdown): {}", userId, e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -44,11 +51,16 @@ public class RedisQueueRepository {
      * @return true если пользователь был удален, false если не найден
      */
     public boolean removeFromQueue(UUID userId) {
-        String userIdStr = userId.toString();
-        Long removed = redisTemplate.opsForZSet().remove(QUEUE_KEY, userIdStr);
-        boolean result = removed != null && removed > 0;
-        log.debug("User {} {} from queue", userId, result ? "removed" : "not found");
-        return result;
+        try {
+            String userIdStr = userId.toString();
+            Long removed = redisTemplate.opsForZSet().remove(QUEUE_KEY, userIdStr);
+            boolean result = removed != null && removed > 0;
+            log.debug("User {} {} from queue", userId, result ? "removed" : "not found");
+            return result;
+        } catch (DataAccessException | CancellationException e) {
+            log.debug("Failed to remove user {} from queue (likely during shutdown): {}", userId, e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -99,8 +111,14 @@ public class RedisQueueRepository {
      * @return количество пользователей в очереди
      */
     public long getQueueSize() {
-        Long size = redisTemplate.opsForZSet().zCard(QUEUE_KEY);
-        return size != null ? size : 0L;
+        try {
+            Long size = redisTemplate.opsForZSet().zCard(QUEUE_KEY);
+            return size != null ? size : 0L;
+        } catch (DataAccessException | CancellationException e) {
+            // During shutdown, Redis operations may be cancelled
+            log.debug("Redis operation cancelled (likely during shutdown): {}", e.getMessage());
+            return 0L;
+        }
     }
 
     /**
@@ -111,24 +129,14 @@ public class RedisQueueRepository {
      * @return множество идентификаторов пользователей (в виде строк), упорядоченных по времени присоединения (самые старые первыми)
      */
     public Set<String> getOldestPlayers(int count) {
-        Set<String> players = redisTemplate.opsForZSet().range(QUEUE_KEY, 0, count - 1);
-        log.debug("Retrieved {} oldest players from queue", players != null ? players.size() : 0);
-        return players;
-    }
-
-    /**
-     * Получает игроков в диапазоне score (диапазон timestamp).
-     * Полезно для поиска игроков, которые присоединились в определенном временном окне.
-     *
-     * @param minScore минимальный timestamp (включительно)
-     * @param maxScore максимальный timestamp (включительно)
-     * @return множество идентификаторов пользователей (в виде строк) в диапазоне score
-     */
-    public Set<String> getPlayersByScoreRange(long minScore, long maxScore) {
-        Set<String> players = redisTemplate.opsForZSet().rangeByScore(QUEUE_KEY, minScore, maxScore);
-        log.debug("Retrieved {} players from queue with scores between {} and {}", 
-                players != null ? players.size() : 0, minScore, maxScore);
-        return players;
+        try {
+            Set<String> players = redisTemplate.opsForZSet().range(QUEUE_KEY, 0, count - 1);
+            log.debug("Retrieved {} oldest players from queue", players != null ? players.size() : 0);
+            return players != null ? players : Set.of();
+        } catch (DataAccessException | CancellationException e) {
+            log.debug("Failed to get oldest players (likely during shutdown): {}", e.getMessage());
+            return Set.of();
+        }
     }
 
     /**
@@ -141,20 +149,15 @@ public class RedisQueueRepository {
         if (userIds == null || userIds.isEmpty()) {
             return 0L;
         }
-        Long removed = redisTemplate.opsForZSet().remove(QUEUE_KEY, userIds.toArray(new Object[0]));
-        long result = removed != null ? removed : 0L;
-        log.debug("Removed {} users from queue", result);
-        return result;
-    }
-
-    /**
-     * Получает всех игроков в очереди.
-     *
-     * @return множество всех идентификаторов пользователей (в виде строк) в очереди
-     */
-    public Set<String> getAllPlayers() {
-        Set<String> players = redisTemplate.opsForZSet().range(QUEUE_KEY, 0, -1);
-        return players != null ? players : Set.of();
+        try {
+            Long removed = redisTemplate.opsForZSet().remove(QUEUE_KEY, userIds.toArray(new Object[0]));
+            long result = removed != null ? removed : 0L;
+            log.debug("Removed {} users from queue", result);
+            return result;
+        } catch (DataAccessException | CancellationException e) {
+            log.debug("Failed to remove users from queue (likely during shutdown): {}", e.getMessage());
+            return 0L;
+        }
     }
 
     /**
